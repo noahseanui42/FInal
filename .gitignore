@@ -1,0 +1,15 @@
+# MATLAB / Simulink generated
+slprj/
+*.slxc
+*.asv
+*.autosave
+codegen/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
