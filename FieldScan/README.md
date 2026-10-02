@@ -7,7 +7,7 @@ three parts:
 |---|---|
 | Set-up: connect, enable, jog, check reach, calibrate servos | **delta app** (`DeltaAppCalibrated/delta_app/main.py`) |
 | The scan: move through the grid, read the 1044, write a CSV | **`field_scan.py`** (`DeltaAppCalibrated/delta_app/`) |
-| Afterwards: baseline subtraction, plots, repeatability | **MATLAB** (this folder) |
+| Afterwards: baseline subtraction, plots, repeatability | **MATLAB** (`../FieldPlots`) |
 
 Only one program can use the Arduino's serial port at a time, so **close the
 delta app before running `field_scan.py`**. Open it again afterwards if you
