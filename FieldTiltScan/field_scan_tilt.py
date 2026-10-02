@@ -418,7 +418,7 @@ def run_scan(link, sensor, cfg, label="scan", note="", coil_current_A=None,
                 pr = (r["pitch"], r["roll"]) if math.isfinite(r["pitch"]) else r["acc_pr"]
                 eta = (clock.now() - t_scan) / k * (n - k)
                 out(f"{k:4d}/{n}  [{p[0]:7.1f} {p[1]:7.1f} {p[2]:7.1f}]  "
-                    f"|B| = {_norm(B):.4f} G  pitch {pr[0]:7.3f}  roll {pr[1]:7.3f} deg  "
+                    f"B = [{B[0]:7.4f} {B[1]:7.4f} {B[2]:7.4f}]  |B| = {_norm(B):.4f} G  pitch {pr[0]:7.3f}  roll {pr[1]:7.3f} deg  "
                     f"gyro {r['g_rms']:.2f} deg/s  settle {waited:.1f} s{'' if settled else ' (gyro not quiet)'}  "
                     f"e={err}  ({eta:.0f} s left)")
     except KeyboardInterrupt:
