@@ -337,6 +337,7 @@ def run_scan(link, sensor, cfg, label="scan", note="", coil_current_A=None,
     err, _ = fs.move_probe(link, cfg, cfg.park_xyz)
     if err == 1:
         raise fs.ScanError(f"Park position {cfg.park_xyz} is unreachable.")
+    last = cfg.park_xyz              # last position sent, for the move timeouts
     sensor.after_move()
     gyro_zeroed = False
     if cfg.zero_gyro:
@@ -389,7 +390,9 @@ def run_scan(link, sensor, cfg, label="scan", note="", coil_current_A=None,
                     out(f"  point {k} {p}: correction {why}; logged as unreachable")
                     err, st = 1, {}
                 else:
-                    err, st = fs.move_probe(link, cfg, send)
+                    err, st = fs.move_probe(link, cfg, send, start=last)
+                    if err != 1:
+                        last = send
                     sensor.after_move()
                 if err == 1:
                     r = {"B": nan3, "Bsd": nan3, "n": 0, "a": nan3, "asd": nan3, "g_rms": math.nan,
@@ -433,7 +436,7 @@ def run_scan(link, sensor, cfg, label="scan", note="", coil_current_A=None,
     out(f"Done in {clock.now() - t_scan:.0f} s. {n_skipped} of {n} points unreachable"
         + (f", {n_unsettled} where the gyro never went quiet." if cfg.gyro_settle_dps > 0 else "."))
     try:
-        fs.move_probe(link, cfg, cfg.park_xyz)
+        fs.move_probe(link, cfg, cfg.park_xyz, start=last)
         out("Parked. Robot left ENABLED (disabling lets the arms drop).")
     except fs.ScanError as e:
         out(f"Could not park: {e}")
