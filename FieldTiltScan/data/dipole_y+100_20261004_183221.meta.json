@@ -1,11 +1,11 @@
 {
-  "label": "dipole-run1_3x7x2_corr-hybrid",
-  "magnet": "floor-0-0",
-  "note": "magnet on mark (0,0), floor z = ___, magnet centre z = ___, pole up, __ mm dia x __ mm",
-  "started": "2026-10-04T17:32:09",
+  "label": "dipole-stand-run2_3x7x2_corr-hybrid",
+  "magnet": "stand-0-100",
+  "note": "magnet on stand moved +100 mm in y from run 1, to (0,+100)",
+  "started": "2026-10-04T18:32:28",
   "coil_current_A": null,
   "n_points": 42,
-  "csv": "dipole-run1_3x7x2_corr-hybrid_floor-0-0_20261004_173137.csv",
+  "csv": "dipole-stand-run2_3x7x2_corr-hybrid_stand-0-100_20261004_183221.csv",
   "script": "FieldTiltScan/field_scan_tilt.py",
   "frame": "sensor axes, raw: B in gauss, acceleration in g, angular rate in deg/s, pitch/roll in deg (tilt_correct.m and R_sensor_to_robot in MATLAB)",
   "config": {
@@ -178,11 +178,14 @@
     "settle_mode": "fixed",
     "settled": "1 gyro quiet, 0 gyro wait timed out, -1 fixed wait"
   },
-  "finished": "2026-10-04T17:42:20",
+  "finished": "2026-10-04T18:42:39",
   "points_done": 42,
   "points_unreachable": 0,
   "points_not_settled": 0,
   "aborted": false,
-  "spatial_timestamp_at_t0_ms": 33492.0,
-  "spatial_timestamps": "spatial_t_first_ms/spatial_t_last_ms are the 1044's own event timestamps, ms since the channel opened; at t_s = 0 it read spatial_timestamp_at_t0_ms"
+  "sensor_reconnected_at_points": [],
+  "spatial_timestamp_at_t0_ms": 9076.0,
+  "spatial_timestamps": "spatial_t_first_ms/spatial_t_last_ms are the 1044's own event timestamps, ms since the channel opened; at t_s = 0 it read spatial_timestamp_at_t0_ms",
+  "renamed_from": "dipole-stand-run2_3x7x2_corr-hybrid_stand-0-100_20261004_183221.csv",
+  "rename_note": "Renamed 2026-10-04 to a shorter name; label/csv/magnet above are the run's original record."
 }
