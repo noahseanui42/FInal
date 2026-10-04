@@ -185,5 +185,8 @@
   "aborted": false,
   "sensor_reconnected_at_points": [],
   "spatial_timestamp_at_t0_ms": 9200.0,
-  "spatial_timestamps": "spatial_t_first_ms/spatial_t_last_ms are the 1044's own event timestamps, ms since the channel opened; at t_s = 0 it read spatial_timestamp_at_t0_ms"
+  "spatial_timestamps": "spatial_t_first_ms/spatial_t_last_ms are the 1044's own event timestamps, ms since the channel opened; at t_s = 0 it read spatial_timestamp_at_t0_ms",
+  "renamed_from": "dipole_x-50_20261004_191247.csv",
+  "magnet_actual": "x+50",
+  "rename_note": "Started with --magnet x-50 by mistake; the magnet was at (+50, 0) as the note says, confirmed by the dipole fit (x = +60 vs -35 for the x-50 run). magnet/csv above are the run's original record."
 }
