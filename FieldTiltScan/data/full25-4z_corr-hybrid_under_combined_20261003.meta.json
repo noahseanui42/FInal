@@ -1,11 +1,11 @@
 {
   "label": "full25-4z_corr-hybrid_combined",
-  "magnet": "xpos",
-  "note": "full box 25 mm x/y, 4 heights; two runs joined (layer 1, then layers 2-4)",
+  "magnet": "under",
+  "note": "full box 25 mm x/y, 4 heights, magnet under the grid; two runs joined (layer 1, then layers 2-4)",
   "started": "2026-10-03T00:24:54",
   "coil_current_A": null,
   "n_points": 260,
-  "csv": "full25-4z_corr-hybrid_xpos_combined_20261003.csv",
+  "csv": "full25-4z_corr-hybrid_under_combined_20261003.csv",
   "script": "FieldTiltScan/field_scan_tilt.py",
   "frame": "sensor axes, raw: B in gauss, acceleration in g, angular rate in deg/s, pitch/roll in deg (tilt_correct.m and R_sensor_to_robot in MATLAB)",
   "config": {
@@ -187,7 +187,7 @@
   "spatial_timestamps": "spatial_t_first_ms/spatial_t_last_ms are the 1044's own event timestamps, ms since the channel opened; at t_s = 0 it read spatial_timestamp_at_t0_ms",
   "combined_from": [
     {
-      "csv": "full25-4z_corr-hybrid_xpos_20261003_002348.csv",
+      "csv": "full25-4z_corr-hybrid_under_20261003_002348.csv",
       "points": "idx 1-65, z -700",
       "started": "2026-10-03T00:24:54",
       "finished": "2026-10-03T00:37:35",
@@ -195,7 +195,7 @@
       "spatial_timestamp_at_t0_ms": 68240.0
     },
     {
-      "csv": "full25-4z_corr-hybrid_layers2-4_xpos_20261003_005155.csv",
+      "csv": "full25-4z_corr-hybrid_layers2-4_under_20261003_005155.csv",
       "points": "idx 66-260, z -666.67/-633.33/-600",
       "started": "2026-10-03T00:52:31",
       "finished": "2026-10-03T01:29:21",
@@ -203,5 +203,6 @@
       "spatial_timestamp_at_t0_ms": 37396.0
     }
   ],
-  "t_s": "seconds since the first run's start; the second run's t_s is shifted by 1657 s (wall-clock gap)"
+  "t_s": "seconds since the first run's start; the second run's t_s is shifted by 1657 s (wall-clock gap)",
+  "rename_note": "Magnet was under the grid; the source runs were recorded as --magnet xpos and renamed on 2026-10-04."
 }

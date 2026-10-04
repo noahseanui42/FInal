@@ -184,5 +184,8 @@
   "points_not_settled": 0,
   "aborted": false,
   "spatial_timestamp_at_t0_ms": 68240.0,
-  "spatial_timestamps": "spatial_t_first_ms/spatial_t_last_ms are the 1044's own event timestamps, ms since the channel opened; at t_s = 0 it read spatial_timestamp_at_t0_ms"
+  "spatial_timestamps": "spatial_t_first_ms/spatial_t_last_ms are the 1044's own event timestamps, ms since the channel opened; at t_s = 0 it read spatial_timestamp_at_t0_ms",
+  "renamed_from": "full25-4z_corr-hybrid_xpos_20261003_002348.csv",
+  "magnet_actual": "under",
+  "rename_note": "Magnet was UNDER the grid, not on the +x side; scanned as --magnet xpos and renamed on 2026-10-04. label/csv/magnet above are the run's original record."
 }
