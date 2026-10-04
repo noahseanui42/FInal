@@ -104,6 +104,7 @@ class Phidget1044Spatial:
         self._latest = None
         self._new = threading.Event()
         self.algorithm, self.algorithm_error = "none", ""
+        self._sample_dt_s, self._attached, self._reattaches = sample_dt_s, False, 0
         if channel is not None:              # tests: a stand-in channel, events fed by hand
             self.sp = channel
             return
@@ -113,8 +114,9 @@ class Phidget1044Spatial:
             if serial_number:
                 self.sp.setDeviceSerialNumber(int(serial_number))
             self.sp.setOnSpatialDataHandler(self._on_data)
+            self.sp.setOnAttachHandler(self._on_attach)
             self.sp.openWaitForAttachment(5000)
-            self.sp.setDataInterval(max(self.sp.getMinDataInterval(), round(sample_dt_s * 1000)))
+            self._set_interval()
             if algorithm != "none":
                 from Phidget22.SpatialAlgorithm import SpatialAlgorithm
                 try:
@@ -130,6 +132,31 @@ class Phidget1044Spatial:
         except Exception:
             self.close()
             raise
+
+    def _set_interval(self):
+        self.sp.setDataInterval(max(self.sp.getMinDataInterval(), round(self._sample_dt_s * 1000)))
+
+    def _on_attach(self, ch):
+        """Phidget22 reopens the channel by itself if the 1044 drops off USB and comes
+        back (seen 2026-10-04, mid-scan), but with its defaults: 256 ms data interval,
+        no filter, gyro not zeroed. Put the interval and filter back and count it."""
+        if not self._attached:
+            self._attached = True
+            return
+        self._reattaches += 1
+        try:
+            self._set_interval()
+            if self.algorithm != "none":
+                from Phidget22.SpatialAlgorithm import SpatialAlgorithm
+                self.sp.setAlgorithm({"imu": SpatialAlgorithm.SPATIAL_ALGORITHM_IMU,
+                                      "ahrs": SpatialAlgorithm.SPATIAL_ALGORITHM_AHRS}[self.algorithm])
+        except Exception:
+            pass
+
+    def take_reattaches(self):
+        """How many times the 1044 reconnected since the last call."""
+        n, self._reattaches = self._reattaches, 0
+        return n
 
     def _on_data(self, ch, acceleration, angularRate, magneticField, timestamp):
         ev = (tuple(acceleration), tuple(angularRate), tuple(magneticField), timestamp)
@@ -363,7 +390,7 @@ def run_scan(link, sensor, cfg, label="scan", note="", coil_current_A=None,
                  "settle_mode": "gyro" if cfg.gyro_settle_dps > 0 else "fixed",
                  "settled": "1 gyro quiet, 0 gyro wait timed out, -1 fixed wait"},
         "finished": None, "points_done": 0, "points_unreachable": 0,
-        "points_not_settled": 0, "aborted": False,
+        "points_not_settled": 0, "aborted": False, "sensor_reconnected_at_points": [],
     }
 
     def write_meta():
@@ -404,6 +431,15 @@ def run_scan(link, sensor, cfg, label="scan", note="", coil_current_A=None,
                     waited, settled = wait_settled(sensor, cfg, clock)
                     n_unsettled += settled == 0
                     r = read_point(sensor, cfg.n_avg, cfg.sample_dt_s, clock)
+                    if r["n"] == 0:            # 1044 dropped off USB: give it time to come back
+                        out(f"  point {k}: no data from the 1044; retrying in 5 s")
+                        clock.sleep(5.0)
+                        r = read_point(sensor, cfg.n_avg, cfg.sample_dt_s, clock)
+                if getattr(sensor, "take_reattaches", lambda: 0)():
+                    meta["sensor_reconnected_at_points"].append(k)
+                    out(f"  WARNING: the 1044 reconnected before point {k}; data rate restored, "
+                        "but its gyro zero is lost (gyro columns biased from here; field and "
+                        "accelerometer are fine)")
                 B = r["B"]
                 deg = list(st.get("deg", nan3))
                 w.writerow([k, *(f"{v:.2f}" for v in p),
