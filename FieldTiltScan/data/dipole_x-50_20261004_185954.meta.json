@@ -185,5 +185,7 @@
   "aborted": false,
   "sensor_reconnected_at_points": [],
   "spatial_timestamp_at_t0_ms": 18416.0,
-  "spatial_timestamps": "spatial_t_first_ms/spatial_t_last_ms are the 1044's own event timestamps, ms since the channel opened; at t_s = 0 it read spatial_timestamp_at_t0_ms"
+  "spatial_timestamps": "spatial_t_first_ms/spatial_t_last_ms are the 1044's own event timestamps, ms since the channel opened; at t_s = 0 it read spatial_timestamp_at_t0_ms",
+  "magnet_centre_above_floor_mm": 260,
+  "magnet_height_note": "Magnet on the stand, 260 mm above the floor (reported 2026-10-04). Floor z in robot coordinates not yet measured."
 }

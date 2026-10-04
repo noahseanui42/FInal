@@ -187,5 +187,7 @@
   "spatial_timestamp_at_t0_ms": 9076.0,
   "spatial_timestamps": "spatial_t_first_ms/spatial_t_last_ms are the 1044's own event timestamps, ms since the channel opened; at t_s = 0 it read spatial_timestamp_at_t0_ms",
   "renamed_from": "dipole-stand-run2_3x7x2_corr-hybrid_stand-0-100_20261004_183221.csv",
-  "rename_note": "Renamed 2026-10-04 to a shorter name; label/csv/magnet above are the run's original record."
+  "rename_note": "Renamed 2026-10-04 to a shorter name; label/csv/magnet above are the run's original record.",
+  "magnet_centre_above_floor_mm": 260,
+  "magnet_height_note": "Magnet on the stand, 260 mm above the floor (reported 2026-10-04). Floor z in robot coordinates not yet measured."
 }

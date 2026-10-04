@@ -86,7 +86,9 @@ Shared moment 2.71 A·m², 7.8° from vertical. Residual RMS 0.0125 G over 210 p
   The 3 Oct magnet-under scan also fitted at y ≈ −31 mm. Checking the mark with the probe
   (jog to (0, 0) at the lowest z and drop a plumb line) would separate the two.
 - **Magnet depth:** about 280 mm below the bottom layer (z −700), deeper than the planned
-  150 mm. Compare with the measured stand height once it's recorded.
+  150 mm. The magnet sat 260 mm above the floor, so the fit puts the floor at about
+  z −1240 in robot coordinates (−980 − 260). The floor run (`dipole_floor-y0`) fitted at
+  z −1165 to −1270, which agrees within its large error.
 
 ### One fit per run (`fit_dipole.m`)
 
@@ -98,5 +100,8 @@ The joint fit removes that by sharing the moment, which is why it is the one to 
 
 ## Still to record
 
-- Magnet centre height (floor + stand + half the magnet) and the magnet's size, to check the
-  fitted z (about −980) and to work out the magnet's remanence (`fit_dipole(..., 'Volume', V)`).
+- **Floor height in robot coordinates**, to check the fitted z. Jog the probe to
+  (0, 0, −780) and measure from the tip to the floor. A gap of about 460 mm (floor at −1240)
+  means the fitted magnet height is right; any difference is the z error (plus any offset
+  between the probe tip and the 1044's chip).
+- **The magnet's size**, to work out its remanence (`fit_dipole(..., 'Volume', V)`).
