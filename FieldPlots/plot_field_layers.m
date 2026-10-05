@@ -11,6 +11,7 @@ function plot_field_layers(dataFile, baselineFile, varargin)
 %   plot_field_layers(file, '', 'Side', 'yz')        % side views in y-z instead of x-z
 %   plot_field_layers(file, '', 'R', R)              % sensor -> robot rotation
 %                                                    % (default: scan_config's R_sensor_to_robot)
+%   plot_field_layers(file, '', 'Figures', {"heat", "3d"}) % only some: heat, direction, side, 3d (or 1-4)
 %   plot_field_layers(file, '', 'TiltCorrect', true)     % remove the probe's tilt (pitch/roll)
 %   plot_field_layers(file, base, 'TiltCorrect', true)   % ... in both, to the baseline's centre
 %
@@ -43,8 +44,10 @@ p.addParameter("Labels", true);
 p.addParameter("R", []);
 p.addParameter("TiltCorrect", false);   % true: remove the probe's tilt first (apply_tilt)
 p.addParameter("Side", "xz");      % side views: "xz" (one panel per y) or "yz" (one per x)
+p.addParameter("Figures", 1:4);    % which to draw: 1-4 or "heat", "direction", "side", "3d"
 p.parse(varargin{:});
 opt = p.Results;
+show = figure_set(opt.Figures);
 if nargin < 2, baselineFile = ''; end
 dataFile = resolve_path(dataFile);
 baselineFile = resolve_path(baselineFile);
@@ -95,11 +98,13 @@ dx = min(diff(xs)); dy = min(diff(ys));
 pad = [-0.5 0.5];
 cols = min(nz, 3); rows = ceil(nz / cols);
 
-% --- 1: heat map of |B| ---
 figsize = [80 80 520 * cols 470 * rows];
-f1 = figure("Name", ['Heat map: ' name], "Color", "w", "Position", figsize);
 lim = [min(Bmag) max(Bmag)];
 if diff(lim) == 0, lim = lim + [-1 1] * 1e-3; end
+
+% --- 1: heat map of |B| ---
+if show(1)
+f1 = figure("Name", ['Heat map: ' name], "Color", "w", "Position", figsize);
 for k = 1:nz
     subplot(rows, cols, k);
     M = layer(Bmag, zs(k));
@@ -125,8 +130,10 @@ for k = 1:nz
     cb = colorbar; ylabel(cb, "|B| (G)");
 end
 suptitle_compat(f1, sprintf("%s: |B|   (%s)", what, name));
+end
 
 % --- 2: direction map ---
+if show(2)
 f2 = figure("Name", ['Direction map: ' name], "Color", "w", "Position", figsize);
 for k = 1:nz
     subplot(rows, cols, k);
@@ -151,8 +158,10 @@ for k = 1:nz
 end
 suptitle_compat(f2, sprintf("%s: arrows = field direction in the x-y plane, colour = Bz   (%s)", ...
     what, name));
+end
 
 % --- 3: side views (x-z panels, one per y; or y-z panels, one per x) ---
+if show(3)
 if strcmpi(opt.Side, "yz")
     ia = 2; ib = 1; as = ys; bs = xs; an = "y"; bn = "x"; oc = 1;   % horizontal y, panels per x, out of page Bx
 else
@@ -191,8 +200,10 @@ for k = 1:nb
 end
 suptitle_compat(f3, sprintf("%s: side view, arrows = field direction in the %s-z plane, colour = B%s   (%s)", ...
     what, an, bn, name));
+end
 
 % --- 4: 3D map, layers stacked at their real heights ---
+if show(4)
 f4 = figure("Name", ['3D map: ' name], "Color", "w", "Position", [80 80 900 750]);
 [xf, yf] = meshgrid(linspace(xs(1), xs(end), 101), linspace(ys(1), ys(end), 101));
 [X, Y] = meshgrid(xs, ys);
@@ -215,15 +226,46 @@ xlim([xs(1) xs(end)] + pad * dx); ylim([ys(1) ys(end)] + pad * dy);
 xlabel("x (mm)"); ylabel("y (mm)"); zlabel("z (mm)");
 view(-35, 25);
 title(sprintf("%s: |B| layers, arrows = field direction   (%s)", what, name), "Interpreter", "none");
+end
 
 if opt.Save
     [d, n] = fileparts(char(dataFile));
-    print(f1, fullfile(d, [n '_heatmap.png']), '-dpng', '-r150');
-    print(f2, fullfile(d, [n '_direction.png']), '-dpng', '-r150');
-    print(f3, fullfile(d, [n '_side.png']), '-dpng', '-r150');
-    print(f4, fullfile(d, [n '_3d.png']), '-dpng', '-r150');
-    fprintf("Saved %s_heatmap.png, _direction.png, _side.png and _3d.png in %s\n", n, d);
+    suffix = {'_heatmap', '_direction', '_side', '_3d'};
+    figs = {};
+    if show(1), figs{end + 1} = f1; end
+    if show(2), figs{end + 1} = f2; end
+    if show(3), figs{end + 1} = f3; end
+    if show(4), figs{end + 1} = f4; end
+    on = find(arrayfun(show, 1:4));
+    for i = 1:numel(on)
+        print(figs{i}, fullfile(d, [n suffix{on(i)} '.png']), '-dpng', '-r150');
+    end
+    fprintf("Saved %s in %s\n", strjoin(cellfun(@(x) [n x '.png'], suffix(on), "UniformOutput", false), ", "), d);
 end
+end
+
+
+function show = figure_set(figs)
+% 'Figures' option -> show(k) true if figure k (1 heat, 2 direction, 3 side, 4 3D) is wanted.
+names = {'heat', 'direction', 'side', '3d'};
+if isnumeric(figs)
+    k = figs(:)';
+else
+    if ischar(figs), figs = {figs}; end
+    if isstring(figs), figs = cellstr(figs); end
+    k = zeros(1, numel(figs));
+    for i = 1:numel(figs)
+        j = find(strcmpi(names, figs{i}), 1);
+        if isempty(j)
+            error("Unknown figure '%s'. Use 1-4 or: heat, direction, side, 3d.", figs{i});
+        end
+        k(i) = j;
+    end
+end
+if isempty(k) || any(k < 1 | k > 4 | k ~= round(k))
+    error("'Figures' must pick from 1-4 (heat, direction, side, 3d).");
+end
+show = @(n) any(k == n);
 end
 
 
