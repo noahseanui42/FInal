@@ -138,3 +138,14 @@ def test_meta_records_the_calibrated_geometry(tmp_path):
     p = fs.run_scan(fs.FakeLink(), fs.FakeMag(), cfg, "t", confirm=lambda *_: None, out=lambda *_: None)
     g = json.loads(p.with_suffix(".meta.json").read_text())["geometry"]
     assert (g["SB"], g["SP"], g["L_UP"], g["L_LO"], g["GEOM_TO_PHYS"]) == (175.0, 75.0, 177.0, 625.0, [2, 0, 1])
+
+
+def test_move_timeout_covers_a_layer_change():
+    # 2026-10-02: x/y +-50/+-150 grid, hybrid, v 2. The move from the end of layer 1 to
+    # the start of layer 2 is ~340 mm plus the dip and rise (~36 s) and hit the old fixed 30 s.
+    cfg = fs.ScanConfig()
+    start, end = (54.4, 165.0, -700.0), (-58.05, -168.50, -661.26)
+    assert fs.expected_move_s(cfg, start, end) > 36.0
+    assert fs.expected_move_s(cfg, None, end) >= fs.expected_move_s(cfg, start, end)
+    # a 25 mm step still fails fast if the robot hangs
+    assert cfg.move_timeout_s + fs.expected_move_s(cfg, (0, 0, -650), (25, 0, -650)) < 40.0

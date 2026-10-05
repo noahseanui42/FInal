@@ -91,3 +91,11 @@ def test_approach_floor_matches_gui_z_limit():
     text = _read_config_h()
     floor = _constexpr_float(text, "APPROACH_Z_FLOOR_MM")
     assert floor == robot_config.Z_LIMIT_DEFAULT - robot_config.TCP_DEFAULT[2]
+
+
+def test_field_scan_move_timing_matches():
+    # field_scan.expected_move_s sizes each move's timeout from these
+    import field_scan
+    text = _read_config_h()
+    assert _constexpr_float(text, "SPEED_PER_V") == field_scan.SPEED_PER_V_MM_S
+    assert _constexpr_float(text, "APPROACH_DZ_MM") == field_scan.APPROACH_DZ_MM

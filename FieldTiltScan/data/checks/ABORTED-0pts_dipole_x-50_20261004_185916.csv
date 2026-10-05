@@ -1,0 +1,1 @@
+idx,x_mm,y_mm,z_mm,Bx_G,By_G,Bz_G,Bx_std_G,By_std_G,Bz_std_G,err,t_s,n_samples,deg1,deg2,deg3,sent_x_mm,sent_y_mm,sent_z_mm,ax_g,ay_g,az_g,ax_std_g,ay_std_g,az_std_g,gyro_rms_dps,gyro_max_dps,settle_s,settled,pitch_deg,roll_deg,acc_pitch_deg,acc_roll_deg,spatial_t_first_ms,spatial_t_last_ms

@@ -59,7 +59,7 @@ class ScanConfig:
     port: str = robot_config.SERIAL_PORT_DEFAULT
     tcp: tuple = robot_config.TCP_DEFAULT
     speed_v: int = 2                 # 1..10 -> 5..50 mm/s; must be an int (firmware reads 2.0 as 0)
-    move_timeout_s: float = 30.0
+    move_timeout_s: float = 30.0     # margin on top of the move's own duration (expected_move_s)
     settle_s: float = 5.0             # after the move ends (dip, then rise): the arms keep swinging for a few s
     park_xyz: tuple = (0.0, 0.0, -650.0)
     xr: tuple = (-50.0, 50.0); nx: int = 5
@@ -193,11 +193,29 @@ def ensure_enabled(link, confirm=input):
     return st
 
 
-def move_probe(link, cfg, xyz):
+# Firmware motion (delta_servo/config.h, checked by tests/test_config_sync.py): a move
+# runs at SPEED_PER_V mm/s per v step, and one that ends with a bicep moving down first
+# goes APPROACH_DZ_MM below the target, then rises into it.
+SPEED_PER_V_MM_S = 5.0
+APPROACH_DZ_MM = 20.0
+LONGEST_MOVE_MM = 600.0          # start unknown (the first park): assume a move across the reach
+
+
+def expected_move_s(cfg, start, end):
+    """Upper bound on the firmware's time for start -> end, dip and rise included.
+    Layer changes cross the whole grid (e.g. 340 mm = 36 s at v 2), so a fixed
+    timeout is not enough."""
+    d = LONGEST_MOVE_MM if start is None else math.dist(start, end)
+    return (d + 2 * APPROACH_DZ_MM) / (SPEED_PER_V_MM_S * max(int(cfg.speed_v), 1))
+
+
+def move_probe(link, cfg, xyz, start=None):
     """Joint move of the PROBE to xyz and block until arrived (mv 1->0).
     Returns (err_code, status). err 1 = unreachable (robot did not move),
     5 = servo pulse clamped. xyz is what is SENT: pass the corrected target
-    when the position correction is on."""
+    when the position correction is on. start is the last position sent (None if
+    unknown); it sets the timeout: the move's duration + cfg.move_timeout_s."""
+    timeout_s = cfg.move_timeout_s + expected_move_s(cfg, start, xyz)
     c = [round(a - b, 2) for a, b in zip(xyz, cfg.tcp)]   # firmware takes effector centre
     link.send(2, {"n": 0, "i": 0, "v": int(cfg.speed_v), "a": 0, "c": c})
     # Every move lasts >= 200 ms (T_MIN_MS): after 100 ms, anything still
@@ -223,8 +241,8 @@ def move_probe(link, cfg, xyz):
             # an mv=0 line before any mv=1 is from before the command; after 1 s
             # with no mv=1 at all, trust mv=0.
             return st["e"], st
-        if time.monotonic() - t0 > cfg.move_timeout_s:
-            raise ScanError(f"Move to {tuple(xyz)} timed out.")
+        if time.monotonic() - t0 > timeout_s:
+            raise ScanError(f"Move to {tuple(xyz)} timed out after {timeout_s:.0f} s.")
 
 
 # --------------------------------------------------------------------------
@@ -334,6 +352,7 @@ def run_scan(link, mag, cfg, label="scan", note="", coil_current_A=None,
     err, _ = move_probe(link, cfg, cfg.park_xyz)
     if err == 1:
         raise ScanError(f"Park position {cfg.park_xyz} is unreachable.")
+    last = cfg.park_xyz              # last position sent, for the move timeouts
 
     meta = {
         "label": label, "note": note, "started": datetime.now().isoformat(timespec="seconds"),
@@ -369,7 +388,9 @@ def run_scan(link, mag, cfg, label="scan", note="", coil_current_A=None,
                     out(f"  point {k} {p}: correction {why}; logged as unreachable")
                     err, st = 1, {}
                 else:
-                    err, st = move_probe(link, cfg, send)
+                    err, st = move_probe(link, cfg, send, start=last)
+                    if err != 1:
+                        last = send
                 if err == 1:
                     B, Bsd, ns = [math.nan] * 3, [math.nan] * 3, 0
                     n_skipped += 1
@@ -398,7 +419,7 @@ def run_scan(link, mag, cfg, label="scan", note="", coil_current_A=None,
 
     out(f"Done in {time.monotonic() - t_scan:.0f} s. {n_skipped} of {n} points unreachable.")
     try:
-        move_probe(link, cfg, cfg.park_xyz)
+        move_probe(link, cfg, cfg.park_xyz, start=last)
         out("Parked. Robot left ENABLED (disabling lets the arms drop).")
     except ScanError as e:
         out(f"Could not park: {e}")

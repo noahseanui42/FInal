@@ -237,7 +237,7 @@ readings arrive on a Python thread, so MATLAB must run Python **out of process**
 ## Not yet checked on hardware
 
 Tested with the simulated robot, a simulated tilting sensor and a stand-in for the
-Spatial channel (`python -m pytest FieldTiltScan/`, 15 tests), and the MATLAB side in
+Spatial channel (`python -m pytest FieldTiltScan/`, 17 tests), and the MATLAB side in
 Octave (`test_tilt_correct`, `test_fit_dipole`, and `make_demo_scan` through
 `plot_tilt`, `tilt_correct`, `plot_field_layers`, `plot_field_arrows3d`, with and
 without `'TiltCorrect'`; `plot_field_map` uses MATLAB-only functions, so only its
@@ -248,5 +248,10 @@ MATLAB→Python link (`mag_open`, `mag_read`, `mag_settle`, `run_field_scan`,
   `none` with an `algorithm_error`), and `pitch_deg` is finite in the CSV.
 - **The board's pitch/roll agree with the acceleration ones** (`plot_tilt` figure 4).
 - **The gyro zeroes at the park position.** It takes 1–2 s and needs the board still.
+- **The 1044 stayed connected.** If it drops off USB mid-scan, Phidget22 reopens it
+  and the script puts the 20 ms data rate back, re-reads a point that got no data
+  (once, after 5 s) and lists the point in `sensor_reconnected_at_points` in the
+  `.meta.json`. The gyro zero is lost from there (gyro columns biased); field and
+  acceleration are unaffected. A reconnect usually means the USB cable or hub.
 - **The tilt resolution you actually get.** Take a scan at one point with several
   repeats and look at the spread of `tilt_deg`.

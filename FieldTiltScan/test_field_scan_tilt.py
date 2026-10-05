@@ -165,6 +165,7 @@ class FakeSpatialChannel:
 
     def setDeviceSerialNumber(self, n): self.serial = n
     def setOnSpatialDataHandler(self, h): self.handler = h
+    def setOnAttachHandler(self, h): self.on_attach = h
     def getMinDataInterval(self): return 4
     def setDataInterval(self, ms): self.interval = ms
     def getDataInterval(self): return self.interval
@@ -180,6 +181,7 @@ class FakeSpatialChannel:
         self.algorithm = alg
 
     def openWaitForAttachment(self, ms):
+        self.on_attach(self)
         def run():
             k = 0
             while not self._stop.is_set():
@@ -209,6 +211,45 @@ def test_spatial_open_path(monkeypatch):
         assert sensor.sp.zeroed
     finally:
         sensor.close()
+
+
+def test_spatial_reconnect_restores_the_data_rate(monkeypatch):
+    # 2026-10-04: the 1044 dropped off USB mid-scan; Phidget22 reopened it at its
+    # default 256 ms interval and the rest of the scan got 11-12 readings a point
+    import Phidget22.Devices.Spatial  # noqa: F401
+    mod = sys.modules["Phidget22.Devices.Spatial"]
+    monkeypatch.setattr(mod, "Spatial", FakeSpatialChannel)
+    sensor = ft.Phidget1044Spatial(0, 0.02, "imu")
+    try:
+        assert sensor.take_reattaches() == 0           # the first attach isn't a reconnect
+        sensor.sp.interval, sensor.sp.algorithm = 256, None
+        sensor.sp.on_attach(sensor.sp)                  # the library reopens it
+        assert sensor.sp.interval == 20 and sensor.sp.algorithm is not None
+        assert sensor.take_reattaches() == 1 and sensor.take_reattaches() == 0
+    finally:
+        sensor.close()
+
+
+def test_scan_logs_a_reconnect_and_retries_an_empty_point(tmp_path):
+    cfg = make_cfg(tmp_path, nx=2, ny=1, nz=1)
+    clock = ft.VirtualClock()
+    link = fs.FakeLink()
+    sensor = ft.FakeTiltSensor(link, clock)
+    real = sensor.samples
+    calls = {"n": 0}
+
+    def samples(n, dt_s, clock=None):               # first read of point 2 gets nothing
+        calls["n"] += 1
+        return ([], [], [], [], []) if calls["n"] == 2 else real(n, dt_s, clock)
+    sensor.samples = samples
+    sensor.take_reattaches = lambda: 1 if calls["n"] == 3 else 0
+    lines = []
+    p = ft.run_scan(link, sensor, cfg, "t", confirm=lambda *_: None, out=lines.append, clock=clock)
+    rows = list(csv.DictReader(open(p)))
+    meta = json.loads(p.with_suffix(".meta.json").read_text())
+    assert all(r["n_samples"] == "5" for r in rows)     # point 2 re-read after the retry
+    assert meta["sensor_reconnected_at_points"] == [2]
+    assert any("retrying" in s for s in lines) and any("reconnected" in s for s in lines)
 
 
 def test_spatial_board_refuses_algorithm(monkeypatch, capsys):
