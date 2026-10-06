@@ -10,8 +10,11 @@ between them is the system's repeatability (robot positioning, sensor, settling)
 - Grid 5 × 7 × 2 = 70 points: x −50 to +50 in 25 mm steps, y −150 to +150 in 50 mm steps,
   z −700 and −600 (probe coordinates, mm). A subset of the full-box grid.
 - 5 s settle, 20 readings per point, speed 2. About 14 min per run, 18:05 to 19:18.
-- Magnet under the grid; its fitted depth is about z −975 to −990, roughly 280 mm below the
-  bottom layer (the same stand as the dipole test). Magnet-only field 0.07–0.25 G per point.
+- Magnet under the grid, 270 mm above the floor; its fitted depth is about z −975 to −990,
+  roughly 280 mm below the bottom layer. Magnet-only field 0.07–0.25 G per point.
+- Height cross-check: the dipole test (magnet 260 mm above the floor, fitted z ≈ −980) puts
+  the floor at about z −1240, so this magnet should be at about −970. The fit with a per-run
+  offset gives −974 to −976 (about 5 mm off); without offsets −987 to −989.
 
 ## Files
 
