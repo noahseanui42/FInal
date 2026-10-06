@@ -44,18 +44,32 @@ The run-to-run spread is about 10 × the sensor noise, so it comes from the syst
 ### Drift
 
 Each run reads slightly higher in Bx and lower in By than the one before, evenly across the
-whole grid:
+whole grid. The probe also tilts slowly over the hour (accelerometer pitch and roll, mean over
+the 70 points):
 
-| Run | Start | Mean change from run 1 (Bx, By, Bz) G |
-|---|---|---|
-| 2 | 18:19 | (+0.0024, −0.0013, +0.0016) |
-| 3 | 18:34 | (+0.0041, −0.0028, +0.0024) |
-| 4 | 18:48 | (+0.0065, −0.0039, +0.0030) |
-| 5 | 19:03 | (+0.0093, −0.0049, +0.0011) |
+| Run | Start | Mean pitch (°) | Mean roll (°) | Δpitch vs run 1 (°) | Δroll vs run 1 (°) | Drift vs run 1 (Bx, By, Bz) mG | Drift size (mG) | Tilt alone would give (mG) | Share from tilt |
+|---|---|---|---|---|---|---|---|---|---|
+| run 1 | 18:05 | 1.04 | −0.50 | 0 | 0 | (0, 0, 0) | 0 | 0 | n/a |
+| run 2 | 18:19 | 1.04 | −0.46 | +0.006 | +0.042 | (+2.4, −1.3, +1.6) | 3.2 | 0.6 | 19% |
+| run 3 | 18:34 | 1.07 | −0.44 | +0.038 | +0.057 | (+4.1, −2.8, +2.4) | 5.5 | 1.0 | 17% |
+| run 4 | 18:48 | 1.12 | −0.43 | +0.080 | +0.074 | (+6.5, −3.9, +3.0) | 8.2 | 1.5 | 19% |
+| run 5 | 19:03 | 1.13 | −0.43 | +0.094 | +0.074 | (+9.3, −4.9, +1.1) | 10.6 | 1.7 | 16% |
+| no magnet | 19:21 | 1.15 | −0.44 | +0.118 | +0.059 | n/a | n/a | n/a | n/a |
 
-About 0.01 G over the hour, the same at every point, so it is an offset drift (sensor
-warm-up or the room), not the magnet moving. Practical consequence: take the no-magnet
-reference close in time to the scan it is subtracted from, or alternate them.
+"Tilt alone would give" is the field change from rotating run 1's measured field by that
+run's change in pitch and roll (|ω × B|, averaged over the points).
+
+- **About 11 mG (1.1 µT) over the hour**, the same at every point: an offset drift, not the
+  magnet moving (the fitted magnet position stays put once each run gets its own offset).
+- **The probe tilt keeps changing** (+0.12° pitch, +0.06° roll by the end), steadily: likely
+  mechanical creep as the servos and printed parts warm. It explains about 17% of the drift.
+- **The other ~83%** is most likely thermal: the 1044's magnetometer offset warming up, or the
+  servo motors' magnets weakening as they warm (the robot adds about 0.15 G at the probe, and
+  magnets lose about 0.1% per °C). Room disturbances can't be ruled out. A 30 min fixed-point
+  log with the servos powered and unpowered would separate these.
+- **Effect:** at the 1.16 mG/mm median gradient, 11 mG is worth about 8 mm of apparent
+  position, so it has to be handled: take the no-magnet reference close in time to the scan,
+  let the rig warm up before scanning, or fit a per-run offset.
 
 ### Position repeatability
 
