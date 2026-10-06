@@ -44,6 +44,7 @@ the CSV.
 | `compare_repeatability.m` | Two `compare_runs` results side by side, e.g. correction off vs hybrid |
 | `plot_repeatability_layers.m` | A `compare_runs` result as maps, one panel per z layer |
 | `compare_positions.m` | Repeatability at several magnet positions |
+| `plot_repeat_runs.py` | Python: every run overlaid, each run minus the mean, run-vs-run differences, spread map per layer, drift per run, and (with `--bg`) the joint dipole fit's position per run in mm |
 
 ```matlab
 off = compare_runs("data/magnet-xpos_corr-off_run*.csv", "data/nomagnet_corr-off_run1_20261002_172221.csv");
@@ -51,6 +52,17 @@ hyb = compare_runs("data/magnet-xpos_corr-hybrid_run*.csv", "data/nomagnet_corr-
 compare_repeatability(off, hyb)
 plot_repeatability_layers(hyb)
 ```
+
+For runs from `field_scan_tilt.py --repeat`, from the repo root (needs numpy,
+pandas, matplotlib; scipy for the dipole fit):
+
+```
+python FieldPlots/plot_repeat_runs.py "FieldTiltScan/data/repeat50_corr-hybrid_run*_stand-y0_*.csv" \
+       --bg FieldTiltScan/data/repeat50_corr-hybrid_none_<time>.csv
+```
+
+PNGs and `summary.txt` go to `FieldTiltScan/figures/repeat50_corr-hybrid_repeat/`
+(`--out` to change).
 
 ## Tilt (FieldTiltScan scans)
 

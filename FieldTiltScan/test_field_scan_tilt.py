@@ -297,3 +297,31 @@ def test_magnet_position_in_name_and_meta(tmp_path):
     p2 = ft.run_scan(link, ft.FakeTiltSensor(link, clock), cfg, "bg_tilt", confirm=lambda *_: None,
                      out=lambda *_: None, clock=clock)
     assert p2.name.startswith("bg_tilt_2") and json.loads(p2.with_suffix(".meta.json").read_text())["magnet"] == ""
+
+
+def test_repeat_runs_back_to_back(tmp_path):
+    ft.main(["--simulate", "--label", "rep", "--magnet", "y0", "--out-dir", str(tmp_path), "--repeat", "3",
+             "--x", "-50", "50", "2", "--y", "0", "0", "1", "--z", "-650", "-650", "1"])
+    for k in (1, 2, 3):
+        (p,) = tmp_path.glob(f"rep_run{k}_y0_*.csv")
+        meta = json.loads(p.with_suffix(".meta.json").read_text())
+        assert meta["repeat"] == {"run": k, "of": 3} and meta["points_done"] == 2 and not meta["aborted"]
+        assert meta["label"] == f"rep_run{k}" and meta["magnet"] == "y0"
+    assert len(list(tmp_path.glob("*.csv"))) == 3
+
+
+def test_repeat_stops_after_an_interrupted_run(tmp_path, monkeypatch):
+    real, calls = ft.read_point, [0]
+
+    def read_point(*args, **kw):        # Ctrl+C during the 4th point: run 2 of 3 (2 points per run)
+        calls[0] += 1
+        if calls[0] == 4:
+            raise KeyboardInterrupt
+        return real(*args, **kw)
+
+    monkeypatch.setattr(ft, "read_point", read_point)
+    ft.main(["--simulate", "--label", "rep", "--out-dir", str(tmp_path), "--repeat", "3",
+             "--x", "-50", "50", "2", "--y", "0", "0", "1", "--z", "-650", "-650", "1"])
+    metas = {p.name.split("_")[1]: json.loads(p.read_text()) for p in tmp_path.glob("*.meta.json")}
+    assert sorted(metas) == ["run1", "run2"]
+    assert not metas["run1"]["aborted"] and metas["run2"]["aborted"] and metas["run2"]["points_done"] == 1

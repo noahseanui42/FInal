@@ -5,6 +5,7 @@
     python FieldTiltScan/field_scan_tilt.py --label magnet_tilt --correction hybrid
     python FieldTiltScan/field_scan_tilt.py --label t --gyro-settle 0.5   # wait for the gyro, not a fixed time
     python FieldTiltScan/field_scan_tilt.py --simulate --label demo        # no hardware
+    python FieldTiltScan/field_scan_tilt.py --label rep --repeat 5         # 5 runs back to back: rep_run1..rep_run5
 
 field_scan.py is NOT changed: this script imports its robot link, moves, grid and
 position correction, and only replaces the per-point reading and the CSV writing.
@@ -335,7 +336,7 @@ def magnet_slug(text):
 
 
 def run_scan(link, sensor, cfg, label="scan", note="", coil_current_A=None,
-             confirm=input, out=print, clock=Clock, magnet=""):
+             confirm=input, out=print, clock=Clock, magnet="", repeat=None):
     pts = fs.scan_grid(cfg.xr, cfg.yr, cfg.zr, cfg.nx, cfg.ny, cfg.nz)
     n = len(pts)
     corr = fs.load_correction(cfg)
@@ -392,6 +393,8 @@ def run_scan(link, sensor, cfg, label="scan", note="", coil_current_A=None,
         "finished": None, "points_done": 0, "points_unreachable": 0,
         "points_not_settled": 0, "aborted": False, "sensor_reconnected_at_points": [],
     }
+    if repeat:
+        meta["repeat"] = {"run": repeat[0], "of": repeat[1]}
 
     def write_meta():
         meta_path.write_text(json.dumps(meta, indent=2))
@@ -568,6 +571,24 @@ class FakeTiltSensor:
 
 
 # --------------------------------------------------------------------------
+def run_repeats(link, sensor, cfg, a, confirm, clock, out=print):
+    """The same scan a.repeat times, sensor and robot kept open, nothing moved in between.
+    Stops early if a run was interrupted (Ctrl+C) so the batch can be ended."""
+    paths = []
+    for k in range(1, a.repeat + 1):
+        out(f"\n=== Repeat run {k} of {a.repeat} ===")
+        p = run_scan(link, sensor, cfg, f"{a.label}_run{k}", a.note, a.coil_current, confirm=confirm,
+                     out=out, clock=clock, magnet=a.magnet, repeat=(k, a.repeat))
+        paths.append(p)
+        if json.loads(p.with_suffix(".meta.json").read_text())["aborted"]:
+            out(f"Run {k} was interrupted; not starting the remaining {a.repeat - k}.")
+            break
+    out("\nRepeat runs written:")
+    for p in paths:
+        out(f"  {p}")
+    return paths
+
+
 def main(argv=None):
     cfg = TiltScanConfig()
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
@@ -597,7 +618,12 @@ def main(argv=None):
     ap.add_argument("--correction", choices=fs.CORRECTIONS, default=cfg.correction,
                     help="position correction: off (default) or hybrid (pose_correction.py)")
     ap.add_argument("--simulate", action="store_true", help="fake robot and tilting sensor, no hardware")
+    ap.add_argument("--repeat", type=int, default=1, metavar="N",
+                    help="run the same scan N times back to back, labelled <label>_run1..N; "
+                         "Ctrl+C stops the current run and skips the rest")
     a = ap.parse_args(argv)
+    if a.repeat < 1:
+        ap.error("--repeat must be 1 or more")
 
     cfg.port, cfg.speed_v, cfg.settle_s = a.port, a.speed, a.settle
     cfg.gyro_settle_dps, cfg.still_s, cfg.settle_min_s = a.gyro_settle, a.still, a.settle_min
@@ -621,8 +647,11 @@ def main(argv=None):
         link = fs.DeltaLink(cfg.port)
         confirm = input
     try:
-        run_scan(link, sensor, cfg, a.label, a.note, a.coil_current, confirm=confirm, clock=clock,
-                 magnet=a.magnet)
+        if a.repeat == 1:
+            run_scan(link, sensor, cfg, a.label, a.note, a.coil_current, confirm=confirm, clock=clock,
+                     magnet=a.magnet)
+        else:
+            run_repeats(link, sensor, cfg, a, confirm, clock)
     except fs.ScanError as e:
         sys.exit(f"ERROR: {e}")
     finally:

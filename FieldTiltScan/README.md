@@ -98,6 +98,7 @@ All of `field_scan.py`'s options work the same way:
 | `--correction` | Position correction: `off` or `hybrid` (see `FieldScan/README.md`) | `off` |
 | `--simulate` | Fake robot and a fake sensor on a tilting platform | |
 | `--magnet` | Where the magnet is (e.g. `underneath`, `none`); goes in the file name and metadata | |
+| `--repeat N` | Run the same scan N times back to back, labelled `<label>_run1` … `_runN`; the robot and 1044 stay connected and the gyro is re-zeroed at park before each run. Ctrl+C stops the current run (its data is kept) and skips the rest | 1 |
 
 New ones:
 
@@ -119,6 +120,20 @@ roll still work.
 `gyro_rms_dps` (or figure 2 of `plot_tilt`). Points that were still give you the
 gyro's noise level. Set RATE a few times above that. Points where the gyro never
 went quiet are logged with `settled = 0` and counted in the metadata.
+
+### Repeatability runs
+
+Five scans of the same grid, magnet not touched in between, then the no-magnet
+background on the same grid (see `data/REPEAT_TEST.md`):
+
+```
+python FieldTiltScan/field_scan_tilt.py --label repeat50_corr-hybrid --magnet stand-y0 --repeat 5 \
+       --correction hybrid --x -50 50 3 --y -150 150 7 --z -700 -600 3 --note "..."
+python FieldTiltScan/field_scan_tilt.py --label repeat50_corr-hybrid --magnet none \
+       --correction hybrid --x -50 50 3 --y -150 150 7 --z -700 -600 3 --note "background, magnet removed"
+python FieldPlots/plot_repeat_runs.py "FieldTiltScan/data/repeat50_corr-hybrid_run*_stand-y0_*.csv" \
+       --bg FieldTiltScan/data/repeat50_corr-hybrid_none_<time>.csv
+```
 
 ## CSV columns
 
