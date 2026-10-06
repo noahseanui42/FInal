@@ -78,6 +78,8 @@ plot_repeatability_layers(R, "Title", "5 runs, magnet fixed")
 plot_field_layers("data/repeat_under-run1_20261006_180203.csv", "data/repeat_none_20261006_192127.csv", "Figures", "3d")
 ```
 
-## Still to record
-
-- Where the magnet was (the notes say "magnet fixed at ___").
+The magnet's exact position isn't needed for this test: only that it stayed put, which the
+fitted positions confirm. Its distance below the grid matters for sensitivity (a closer magnet
+gives a stronger gradient, so a position error shows up as a larger field change); at
+1.16 mG/mm median gradient and 0.2 mG sensor noise, the test resolves about 0.2 mm, well
+below the 2.2 mm measured.
