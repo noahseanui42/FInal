@@ -95,6 +95,17 @@ plot_repeatability_layers(R, "Title", "5 runs, magnet fixed")
 plot_field_layers("data/repeat_under-run1_20261006_180203.csv", "data/repeat_none_20261006_192127.csv", "Figures", "3d")
 ```
 
+% difference in the |B| heat map from each run to the next (1→2 … 4→5, magnet field only):
+
+```matlab
+repeatability_heatmaps()                                   % maps, bar chart and table
+repeatability_heatmaps("Pairs", [1 2; 1 3; 1 4; 1 5])     % every run against run 1
+```
+
+Mean size of the difference between consecutive runs: 1.5–1.9 % per point (largest
+9.2 %, all the largest on the top layer, z −600, where the field is weakest). Against
+run 1 it grows from 1.7 % (run 2) to 3.1 % (run 5): the drift above.
+
 The magnet's exact position isn't needed for this test: only that it stayed put, which the
 fitted positions confirm. Its distance below the grid matters for sensitivity (a closer magnet
 gives a stronger gradient, so a position error shows up as a larger field change); at
