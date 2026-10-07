@@ -34,7 +34,9 @@ plot_correction_map("data/magnet-xpos_corr-hybrid_run1_20261002_182828.csv")
 The second argument is optional: a baseline scan (no magnet / coils off) that is
 subtracted point by point. `plot_field_layers`, `plot_field_arrows3d`,
 `plot_correction_map` and `plot_tilt` take `"Save", true` to write PNGs next to
-the CSV.
+the CSV. `plot_field_layers` draws four figures; `"Figures"` picks some of them:
+`{"heat", "direction", "side", "3d"}` or the numbers 1–4, e.g.
+`plot_field_layers(file, bg, "Figures", {"heat", "3d"})`.
 
 ## Repeatability
 

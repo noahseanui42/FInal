@@ -44,11 +44,15 @@ One magnetic moment shared by all five runs (the magnet wasn't rotated), one pos
 
 ```
 cd FieldTiltScan
-python ../FieldPlots/fit_dipole_joint.py data/full25-4z_corr-hybrid_none_20261004_155505.csv \
+python ../FieldPlots/fit_dipole_joint.py --plot data/full25-4z_corr-hybrid_none_20261004_155505.csv \
   data/dipole_y0_20261004_181805.csv data/dipole_y+100_20261004_183221.csv \
   data/dipole_y-100_20261004_184523.csv data/dipole_x-50_20261004_185954.csv \
   data/dipole_x+50_20261004_191247.csv
 ```
+
+Add `--plot` to also draw the comparison figure, saved as
+[`dipole_joint_fit.png`](dipole_joint_fit.png): the magnet's field on the bottom layer for each
+run with the fitted (×) and ruler (○) positions, a top view of all five, and the shift table.
 
 | Run | Fitted position (mm) | ± (1σ, mm) |
 |---|---|---|
