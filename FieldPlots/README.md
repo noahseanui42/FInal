@@ -46,6 +46,8 @@ the CSV. `plot_field_layers` draws four figures; `"Figures"` picks some of them:
 | `compare_repeatability.m` | Two `compare_runs` results side by side, e.g. correction off vs hybrid |
 | `plot_repeatability_layers.m` | A `compare_runs` result as maps, one panel per z layer |
 | `compare_positions.m` | Repeatability at several magnet positions |
+| `compare_repeat_heatmaps.m` | The 6 Oct repeat test on its own: heat maps of the no-magnet reference and runs 1–5, and the % change 1→2 … 4→5. Finds the files itself; needs no other file |
+| `repeatability_heatmaps.m` | % difference in the \|B\| heat map between repeated scans of the same setup (6 Oct five-run test, or the 2 Oct pairs) |
 
 ```matlab
 off = compare_runs("data/magnet-xpos_corr-off_run*.csv", "data/nomagnet_corr-off_run1_20261002_172221.csv");
@@ -53,6 +55,14 @@ hyb = compare_runs("data/magnet-xpos_corr-hybrid_run*.csv", "data/nomagnet_corr-
 compare_repeatability(off, hyb)
 plot_repeatability_layers(hyb)
 ```
+
+`repeatability_heatmaps()` maps repeat runs as a % difference per point, each run
+minus its no-magnet scan. By default it uses the 6 Oct repeat test
+(`FieldTiltScan/data/REPEAT_TEST.md`, five runs, 1→2 … 4→5);
+`repeatability_heatmaps("2oct")` uses the 2 Oct pairs above (correction off,
+hybrid, magnet-under). It uses `compare_heatmaps` (below), so it takes the same
+options, e.g. `"Save", true` or `"Pairs", [1 2; 1 3; 1 4; 1 5]` for every run
+against run 1.
 
 ## Tilt (FieldTiltScan scans)
 
@@ -63,7 +73,7 @@ plot_repeatability_layers(hyb)
 | `apply_tilt.m` | What the plots' `"TiltCorrect"` option runs |
 | `fit_dipole.m` | Point-dipole fit (moment + position) with residuals |
 | `compare_tilt_runs.m` | Repeated tilt scans: repeatability and dipole-fit accuracy, raw vs tilt-corrected |
-| `compare_heatmaps.m` | % change in the \|B\| heat map from each run to the next (1→2, 2→3, …), per point and per z layer |
+| `compare_heatmaps.m` | Change in the \|B\| heat map from each run to the next (1→2, 2→3, …, or chosen `"Pairs"`), in % or mG (`"Units", "mG"`), per point and per z layer |
 
 ```matlab
 cd FieldTiltScan
@@ -73,15 +83,19 @@ plot_field_layers("data/magnet_tilt_20261002_223300.csv", "", "TiltCorrect", tru
 fit_dipole("data/magnet_tilt_20261002_223300_tiltcorr.csv")
 ```
 
-`compare_heatmaps()` with no arguments compares the five dipole runs
-(`DIPOLE_TEST.md`) in the order they were taken, each minus the no-magnet
-background: change = 100 × (|B| of run k+1 − |B| of run k) / |B| of run k.
-Give it your own files (or a wildcard, sorted by time stamp) for other runs:
+`compare_heatmaps` works on any runs: change = 100 × (|B| of run k+1 − |B| of
+run k) / |B| of run k at every point, each run minus a background scan if you give
+one. With no file names it opens a file dialog: pick the runs (Ctrl+click for
+several; they're sorted by the time stamp in their names), then the no-magnet
+scan (Cancel for none). It needs only `compare_heatmaps.m` itself, so it can be
+copied into any folder of CSVs.
 
 ```matlab
-compare_heatmaps()                                         % the five dipole runs
+compare_heatmaps()                                         % pick the files
+compare_heatmaps("Save", true)                             % pick, and save PNGs next to them
+compare_heatmaps("Units", "mG")                            % pick, change in mG instead of %
 compare_heatmaps("data/dipole_*.csv", "data/full25-4z_corr-hybrid_none_20261004_155505.csv")
-D = compare_heatmaps([], [], "Save", true);                % + heatmap_change*.png in data/
+compare_heatmaps({"run1.csv", "run2.csv", "run3.csv"}, "background.csv")   % in this order
 ```
 
 `plot_field_layers`, `plot_field_arrows3d` and `plot_field_map` take
