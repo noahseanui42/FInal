@@ -99,6 +99,7 @@ plot_field_layers("data/repeat_under-run1_20261006_180203.csv", "data/repeat_non
 
 ```matlab
 compare_repeat_heatmaps()                                  % standalone: reference + runs, % change
+compare_repeat_heatmaps("Units", "mG")                     % same, change in mG
 repeatability_heatmaps()                                   % maps, bar chart and table
 repeatability_heatmaps("Pairs", [1 2; 1 3; 1 4; 1 5])     % every run against run 1
 ```
@@ -106,6 +107,10 @@ repeatability_heatmaps("Pairs", [1 2; 1 3; 1 4; 1 5])     % every run against ru
 Mean size of the difference between consecutive runs: 1.5–1.9 % per point (largest
 9.2 %, all the largest on the top layer, z −600, where the field is weakest). Against
 run 1 it grows from 1.7 % (run 2) to 3.1 % (run 5): the drift above.
+
+In mG the change between consecutive runs is 1.4–1.9 mG median per point (2.3–3.1 mG
+RMS, largest 11.7 mG), about the same on both layers. The % is bigger on the top layer
+only because the magnet's field there is weaker (≈0.09 G against ≈0.2 G at z −700).
 
 The magnet's exact position isn't needed for this test: only that it stayed put, which the
 fitted positions confirm. Its distance below the grid matters for sensitivity (a closer magnet

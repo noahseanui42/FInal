@@ -5,6 +5,7 @@ function D = compare_repeat_heatmaps(folder, varargin)
 %
 %   compare_repeat_heatmaps()                  % finds the files itself (see below)
 %   compare_repeat_heatmaps("C:\scans\data")   % or in this folder
+%   compare_repeat_heatmaps(..., "Units", "mG")    % change in milligauss instead of %
 %   compare_repeat_heatmaps(..., "Save", true) % also save PNGs next to the CSVs
 %   compare_repeat_heatmaps(..., "Labels", false)  % no values printed on the maps
 %   D = compare_repeat_heatmaps(..., "Plot", false)  % numbers only
@@ -18,32 +19,48 @@ function D = compare_repeat_heatmaps(folder, varargin)
 % leaving the magnet's field only (the Earth's field, the servos' magnets and the
 % sensor's offset are in both and cancel). Then at every grid point:
 %
-%   change (%) = 100 * (|B| of run k+1 - |B| of run k) / |B| of run k
+%   change (%)  = 100 * (|B| of run k+1 - |B| of run k) / |B| of run k
+%   change (mG) = 1000 * (|B| of run k+1 - |B| of run k)       ("Units", "mG")
+%
+% The % is relative to the magnet's field, which is weakest on the top layer, so the
+% same change in mG is a bigger % there. The mG maps show the change itself, the same
+% size wherever the field is weak or strong (1 mG = 0.1 uT).
 %
 % Nothing was touched between the runs, so the change is the system's repeatability
 % (plus any drift over the hour).
 %
 % Figure 1: heat maps of |B|, one row per z layer: the no-magnet reference (raw field,
 %           its own colour scale), then runs 1-5 (magnet only, one shared scale).
-% Figure 2: % change, run 1 -> 2, 2 -> 3, 3 -> 4, 4 -> 5, one row per z layer.
+% Figure 2: change (% or mG), run 1 -> 2, 2 -> 3, 3 -> 4, 4 -> 5, one row per z layer.
 %           Red = stronger in the later run, blue = weaker, white = no change.
-% Figure 3: summary per pair: mean change, mean size of the change, total over the grid.
+% Figure 3: summary per pair: mean change, mean size of the change, and the total over
+%           the grid (%) or the RMS change (mG).
 % Command window: the same numbers as a table.
 %
 % D: files, reference, P (points, mm), Bmag (N x 5, magnet only, G), Bref (N x 1, raw
-% no-magnet |B|, G), pct (N x 4, %), and the summary numbers per pair.
+% no-magnet |B|, G), pct (N x 4, %), dmG (N x 4, mG), units, and the summary numbers per
+% pair in those units.
 
 p = inputParser;
 p.addParameter("Save", false);
 p.addParameter("Labels", true);
 p.addParameter("Plot", true);
-if nargin >= 1 && any(strcmpi(char(folder), {'Save', 'Labels', 'Plot'}))
+p.addParameter("Units", "%");        % "%" or "mG"
+if nargin >= 1 && any(strcmpi(char(folder), {'Save', 'Labels', 'Plot', 'Units'}))
     varargin = [{folder}, varargin];
     folder = '';
 end
 if nargin < 1, folder = ''; end
 p.parse(varargin{:});
 opt = p.Results;
+units = char(opt.Units);
+if any(strcmpi(units, {'mG', 'milligauss'}))
+    units = 'mG';
+elseif any(strcmpi(units, {'%', 'pct', 'percent'}))
+    units = '%';
+else
+    error('"Units" must be "%%" or "mG", not "%s".', units);
+end
 
 % --- find the files ---
 [runs, ref] = find_files(char(folder));
@@ -79,46 +96,67 @@ for r = 1:nRun
     Bmag(ok, r) = sqrt(sum((Br(loc(ok), :) - B0(loc0(ok), :)).^2, 2));
 end
 
-% --- % change, run k -> run k+1 ---
+% --- change, run k -> run k+1, in % and in mG ---
 nPair = nRun - 1;
+dmG = 1000 * (Bmag(:, 2:end) - Bmag(:, 1:end-1));
 pct = 100 * (Bmag(:, 2:end) - Bmag(:, 1:end-1)) ./ Bmag(:, 1:end-1);
 pct(~isfinite(pct)) = NaN;
 pairs = arrayfun(@(k) sprintf('%d -> %d', k, k + 1), (1:nPair).', 'UniformOutput', false);
+if strcmp(units, 'mG')
+    chg = dmG; uLabel = 'mG'; uFmt = '%+.1f'; uName = 'in mG';
+    lastName = 'rms';                 % RMS change over the grid, mG
+else
+    chg = pct; uLabel = '%'; uFmt = '%+.1f%%'; uName = '% of the earlier run';
+    lastName = 'total';               % change in |B| summed over the grid, %
+end
 
-meanPct = nan(nPair, 1); meanAbs = meanPct; medAbs = meanPct; largest = meanPct;
-totalPct = meanPct; largestAt = nan(nPair, 3);
+meanChg = nan(nPair, 1); meanAbs = meanChg; medAbs = meanChg; largest = meanChg;
+lastCol = meanChg; largestAt = nan(nPair, 3);
 for k = 1:nPair
-    v = pct(:, k); ok = isfinite(v);
+    v = chg(:, k); ok = isfinite(v);
     if ~any(ok), continue; end
-    meanPct(k) = mean(v(ok));
+    meanChg(k) = mean(v(ok));
     meanAbs(k) = mean(abs(v(ok)));
     medAbs(k) = median(abs(v(ok)));
     av = abs(v); av(~ok) = -Inf;
     [~, i] = max(av);
     largest(k) = v(i);
     largestAt(k, :) = P(i, :);
-    totalPct(k) = 100 * (sum(Bmag(ok, k + 1)) - sum(Bmag(ok, k))) / sum(Bmag(ok, k));
+    if strcmp(units, 'mG')
+        lastCol(k) = sqrt(mean(v(ok).^2));
+    else
+        lastCol(k) = 100 * (sum(Bmag(ok, k + 1)) - sum(Bmag(ok, k))) / sum(Bmag(ok, k));
+    end
 end
 
 fprintf('\nMagnet field (run minus no-magnet reference): median |B| per run, G\n');
 fprintf('  run %d: %.4f\n', [1:nRun; arrayfun(@(r) med_ok(Bmag(:, r)), 1:nRun)]);
 fprintf('No-magnet reference (raw): median |B| %.4f G\n', med_ok(Bref));
-fprintf('\nChange from one run to the next, %% of the earlier run\n\n');
-fprintf('  %-7s %8s %8s %8s %9s  %-18s %8s\n', 'runs', 'mean', 'mean|%|', 'med|%|', ...
-    'largest', 'at (x, y, z) mm', 'total');
+u = strrep(uLabel, '%', '%%');
+fprintf(['\nChange from one run to the next, ' strrep(uName, '%', '%%') '\n\n']);
+fprintf('  %-7s %9s %9s %9s %9s  %-18s %9s\n', 'runs', 'mean', ['mean|' uLabel '|'], ...
+    ['med|' uLabel '|'], 'largest', 'at (x, y, z) mm', lastName);
+w = num2str(9 - numel(uLabel));      % number width, so the unit fits the column
+sgn = '+';
+if strcmp(units, 'mG'), sgn = ''; end   % rms is never negative
 for k = 1:nPair
-    fprintf('  %-7s %+7.1f%% %7.1f%% %7.1f%% %+8.1f%%  %-18s %+7.1f%%\n', pairs{k}, ...
-        meanPct(k), meanAbs(k), medAbs(k), largest(k), ...
-        sprintf('(%.0f, %.0f, %.0f)', largestAt(k, :)), totalPct(k));
+    fprintf(['  %-7s %+' w '.1f' u ' %' w '.1f' u ' %' w '.1f' u ' %+' w '.1f' u ...
+        '  %-18s %' sgn w '.1f' u '\n'], ...
+        pairs{k}, meanChg(k), meanAbs(k), medAbs(k), largest(k), ...
+        sprintf('(%.0f, %.0f, %.0f)', largestAt(k, :)), lastCol(k));
 end
-fprintf(['\n  mean: average change (+ stronger, - weaker)   mean|%%| / med|%%|: average / median\n' ...
-    '  size of the change   largest: biggest change, at that point   total: change in |B|\n' ...
-    '  summed over the grid\n\n']);
+fprintf(['\n  mean: average change (+ stronger, - weaker)   mean|.| / med|.|: average / median\n' ...
+    '  size of the change   largest: biggest change, at that point\n']);
+if strcmp(units, 'mG')
+    fprintf('  rms: root-mean-square change over the grid   (1 mG = 0.1 uT)\n\n');
+else
+    fprintf('  total: change in |B| summed over the grid\n\n');
+end
 
 D = struct("files", {runs}, "reference", ref, "P", P, "Bmag", Bmag, "Bref", Bref, ...
-    "pct", pct, "pairs", {pairs}, "mean_pct", meanPct, "mean_abs_pct", meanAbs, ...
-    "median_abs_pct", medAbs, "largest_pct", largest, "largest_at_mm", largestAt, ...
-    "total_pct", totalPct);
+    "pct", pct, "dmG", dmG, "units", units, "pairs", {pairs}, "mean", meanChg, ...
+    "mean_abs", meanAbs, "median_abs", medAbs, "largest", largest, ...
+    "largest_at_mm", largestAt, "total_or_rms", lastCol);
 if ~opt.Plot, return; end
 
 % --- grid ---
@@ -153,42 +191,45 @@ for iz = 1:nz
 end
 suptitle_compat(f1, "Repeatability: no-magnet reference (raw) and runs 1-5 (minus the reference), |B|");
 
-% --- 2: % change maps ---
-cl = max(abs(pct(isfinite(pct))));
+% --- 2: change maps ---
+cl = max(abs(chg(isfinite(chg))));
 if isempty(cl) || cl == 0, cl = 1; end
-f2 = figure("Name", "Repeatability: % change", "Color", "w", ...
+f2 = figure("Name", ['Repeatability: change (' uLabel ')'], "Color", "w", ...
     "Position", [60 60 260 * nPair + 140 430 * nz + 60]);
 for iz = 1:nz
     for k = 1:nPair
         subplot(nz, nPair, (iz - 1) * nPair + k);
-        M = to_grid(P, pct(:, k), xs, ys, zs(iz));
-        map_panel(M, fmt, [-cl cl], redblue(256), "%+.0f%%");
+        M = to_grid(P, chg(:, k), xs, ys, zs(iz));
+        map_panel(M, fmt, [-cl cl], redblue(256), uFmt);
         v = M(isfinite(M));
         title({sprintf("Run %d -> run %d", k, k + 1), ...
-            sprintf("z = %.0f mm, mean |%%| %.1f", zs(iz), mean(abs(v)))}, "FontSize", 9);
-        if k == nPair, cb = colorbar; ylabel(cb, "change in |B| (%)"); end
+            sprintf(['z = %.0f mm, mean |change| %.1f ' u], zs(iz), mean(abs(v)))}, "FontSize", 9);
+        if k == nPair, cb = colorbar; ylabel(cb, ['change in |B| (' uLabel ')']); end
     end
 end
-suptitle_compat(f2, "Repeatability: change in |B| (magnet only) from one run to the next, % of the earlier run");
+suptitle_compat(f2, ['Repeatability: change in |B| (magnet only) from one run to the next, ' uName]);
 
 % --- 3: summary ---
 f3 = figure("Name", "Repeatability: summary", "Color", "w", "Position", [100 100 700 420]);
-bar(1:nPair, [meanPct meanAbs totalPct]);
+bar(1:nPair, [meanChg meanAbs lastCol]);
 hold on; plot([0.5 nPair + 0.5], [0 0], "k-"); hold off
 set(gca, "XTick", 1:nPair, "XTickLabel", pairs);
 xlim([0.5 nPair + 0.5]);
-xlabel("runs compared"); ylabel("change (%)");
-legend({"mean change (signed)", "mean size of change |%|", "total field over the grid"}, ...
-    "Location", "northeast");
+xlabel("runs compared"); ylabel(['change (' uLabel ')']);
+if strcmp(units, 'mG'), third = 'RMS change over the grid'; else, third = 'total field over the grid'; end
+legend({'mean change (signed)', 'mean size of change', third}, "Location", "northeast");
 grid on
 title("Repeatability: change from one run to the next");
 
 if opt.Save
     d = fileparts(runs{1});
     print(f1, fullfile(d, 'repeat_heatmaps.png'), '-dpng', '-r150');
-    print(f2, fullfile(d, 'repeat_change.png'), '-dpng', '-r150');
-    print(f3, fullfile(d, 'repeat_change_summary.png'), '-dpng', '-r150');
-    fprintf("Saved repeat_heatmaps.png, repeat_change.png and repeat_change_summary.png in %s\n", d);
+    tag = '';
+    if strcmp(units, 'mG'), tag = '_mG'; end
+    print(f2, fullfile(d, ['repeat_change' tag '.png']), '-dpng', '-r150');
+    print(f3, fullfile(d, ['repeat_change' tag '_summary.png']), '-dpng', '-r150');
+    fprintf("Saved repeat_heatmaps.png, repeat_change%s.png and repeat_change%s_summary.png in %s\n", ...
+        tag, tag, d);
 end
 end
 
