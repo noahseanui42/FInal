@@ -98,6 +98,7 @@ plot_field_layers("data/repeat_under-run1_20261006_180203.csv", "data/repeat_non
 % difference in the |B| heat map from each run to the next (1→2 … 4→5, magnet field only):
 
 ```matlab
+compare_repeat_heatmaps()                                  % standalone: reference + runs, % change
 repeatability_heatmaps()                                   % maps, bar chart and table
 repeatability_heatmaps("Pairs", [1 2; 1 3; 1 4; 1 5])     % every run against run 1
 ```

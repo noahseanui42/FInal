@@ -46,6 +46,7 @@ the CSV. `plot_field_layers` draws four figures; `"Figures"` picks some of them:
 | `compare_repeatability.m` | Two `compare_runs` results side by side, e.g. correction off vs hybrid |
 | `plot_repeatability_layers.m` | A `compare_runs` result as maps, one panel per z layer |
 | `compare_positions.m` | Repeatability at several magnet positions |
+| `compare_repeat_heatmaps.m` | The 6 Oct repeat test on its own: heat maps of the no-magnet reference and runs 1–5, and the % change 1→2 … 4→5. Finds the files itself; needs no other file |
 | `repeatability_heatmaps.m` | % difference in the \|B\| heat map between repeated scans of the same setup (6 Oct five-run test, or the 2 Oct pairs) |
 
 ```matlab
