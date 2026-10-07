@@ -63,6 +63,7 @@ plot_repeatability_layers(hyb)
 | `apply_tilt.m` | What the plots' `"TiltCorrect"` option runs |
 | `fit_dipole.m` | Point-dipole fit (moment + position) with residuals |
 | `compare_tilt_runs.m` | Repeated tilt scans: repeatability and dipole-fit accuracy, raw vs tilt-corrected |
+| `compare_heatmaps.m` | % change in the \|B\| heat map from each run to the next (1→2, 2→3, …), per point and per z layer |
 
 ```matlab
 cd FieldTiltScan
@@ -70,6 +71,17 @@ addpath ../FieldPlots
 plot_tilt("data/magnet_tilt_20261002_223300.csv")
 plot_field_layers("data/magnet_tilt_20261002_223300.csv", "", "TiltCorrect", true)
 fit_dipole("data/magnet_tilt_20261002_223300_tiltcorr.csv")
+```
+
+`compare_heatmaps()` with no arguments compares the five dipole runs
+(`DIPOLE_TEST.md`) in the order they were taken, each minus the no-magnet
+background: change = 100 × (|B| of run k+1 − |B| of run k) / |B| of run k.
+Give it your own files (or a wildcard, sorted by time stamp) for other runs:
+
+```matlab
+compare_heatmaps()                                         % the five dipole runs
+compare_heatmaps("data/dipole_*.csv", "data/full25-4z_corr-hybrid_none_20261004_155505.csv")
+D = compare_heatmaps([], [], "Save", true);                % + heatmap_change*.png in data/
 ```
 
 `plot_field_layers`, `plot_field_arrows3d` and `plot_field_map` take
