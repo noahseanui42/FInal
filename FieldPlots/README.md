@@ -73,7 +73,7 @@ against run 1.
 | `apply_tilt.m` | What the plots' `"TiltCorrect"` option runs |
 | `fit_dipole.m` | Point-dipole fit (moment + position) with residuals |
 | `compare_tilt_runs.m` | Repeated tilt scans: repeatability and dipole-fit accuracy, raw vs tilt-corrected |
-| `compare_heatmaps.m` | % change in the \|B\| heat map from each run to the next (1→2, 2→3, …, or chosen `"Pairs"`), per point and per z layer |
+| `compare_heatmaps.m` | Change in the \|B\| heat map from each run to the next (1→2, 2→3, …, or chosen `"Pairs"`), in % or mG (`"Units", "mG"`), per point and per z layer |
 
 ```matlab
 cd FieldTiltScan
@@ -93,6 +93,7 @@ copied into any folder of CSVs.
 ```matlab
 compare_heatmaps()                                         % pick the files
 compare_heatmaps("Save", true)                             % pick, and save PNGs next to them
+compare_heatmaps("Units", "mG")                            % pick, change in mG instead of %
 compare_heatmaps("data/dipole_*.csv", "data/full25-4z_corr-hybrid_none_20261004_155505.csv")
 compare_heatmaps({"run1.csv", "run2.csv", "run3.csv"}, "background.csv")   % in this order
 ```

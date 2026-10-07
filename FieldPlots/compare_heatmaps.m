@@ -1,5 +1,5 @@
 function D = compare_heatmaps(files, baselineFile, varargin)
-% compare_heatmaps — percentage change in the |B| heat map from one run to the next.
+% compare_heatmaps — change in the |B| heat map from one run to the next, in % or mG.
 %
 %   compare_heatmaps()                       % pick the runs in a file dialog (Ctrl+click
 %                                            % for several), then the no-magnet background
@@ -11,14 +11,12 @@ function D = compare_heatmaps(files, baselineFile, varargin)
 %   compare_heatmaps(files, "")              % raw field (includes Earth's field)
 %   compare_heatmaps([], baselineFile)       % pick the runs, background given
 %   compare_heatmaps("Save", true)           % pick the files, with options
-%
-% File names can be full paths or relative to MATLAB's current folder. This file is
-% all it needs; apply_tilt.m and tilt_correct.m only with "TiltCorrect".
+%   compare_heatmaps(..., "Units", "mG")     % change in milligauss instead of %
 %   compare_heatmaps(..., "Save", true)      % also save PNGs next to the first CSV
 %   compare_heatmaps(..., "Labels", false)   % no values printed on the maps
-%   compare_heatmaps(..., "Floor", 0.02)     % leave out points where the earlier run's
-%                                            % |B| is below 0.02 G (% blows up there)
-%   compare_heatmaps(..., "CLim", 100)       % colour scale fixed at -100..+100 %
+%   compare_heatmaps(..., "Floor", 0.02)     % % only: leave out points where the earlier
+%                                            % run's |B| is below 0.02 G (% blows up there)
+%   compare_heatmaps(..., "CLim", 100)       % colour scale fixed at -100..+100 (% or mG)
 %   compare_heatmaps(..., "TiltCorrect", true)   % remove the probe's tilt first
 %   compare_heatmaps(..., "R", R)            % sensor -> robot rotation
 %   compare_heatmaps(..., "Pairs", [1 2; 3 4])   % compare these runs instead of 1->2, 2->3, ...
@@ -26,26 +24,35 @@ function D = compare_heatmaps(files, baselineFile, varargin)
 %   compare_heatmaps(..., "Name", "repeat")  % PNG names with "Save" (default heatmap_change)
 %   D = compare_heatmaps(..., "Plot", false) % numbers only
 %
+% File names can be full paths or relative to MATLAB's current folder. This file is
+% all it needs; apply_tilt.m and tilt_correct.m only with "TiltCorrect".
+%
 % Run k is compared with run k+1 (1 -> 2, 2 -> 3, ...) at every grid point, or each
 % row [a b] of "Pairs" compares run a with run b:
 %
-%   change (%) = 100 * (|B|_b - |B|_a) / |B|_a
+%   change (%)  = 100 * (|B|_b - |B|_a) / |B|_a
+%   change (mG) = 1000 * (|B|_b - |B|_a)              ("Units", "mG")
 %
-% so +50 % means the field at that point got 50 % stronger in the later run.
+% so +50 % means the field at that point got 50 % stronger in the later run. The % is
+% relative to the field at that point, so the same change is a bigger % where the field
+% is weak (e.g. far from the magnet, once a background is subtracted); the mG maps
+% show the change itself (1 mG = 0.1 uT).
 % |B| is the same quantity plot_field_layers shows in its heat map (figure 1),
 % with the same baseline subtraction, so the maps line up with those.
 % Points are matched between runs by position (to 0.1 mm), not by row.
 %
 % Figure 1: one column per pair of runs, one row per z layer. Red = the field got
 %           stronger, blue = weaker, white = no change; one colour scale for all.
-% Figure 2: summary per pair: mean change, mean size of the change (mean |%|),
-%           and the change in the total field over the grid.
+% Figure 2: summary per pair: mean change, mean size of the change, and the change in
+%           the total field over the grid (%) or the RMS change (mG).
 % Command window: the same summary as a table.
 %
 % D is a struct: files, names, P (points, mm), Bmag (N x nRun, G), pct (N x nPair, %),
-% pairs (labels) and the summary columns (one value per pair).
+% dmG (N x nPair, mG), units, pairs (labels) and the summary columns (one value per
+% pair, in those units).
 
-optNames = {'Save', 'Labels', 'Plot', 'Floor', 'CLim', 'R', 'TiltCorrect', 'Pairs', 'Title', 'Name'};
+optNames = {'Save', 'Labels', 'Plot', 'Floor', 'CLim', 'R', 'TiltCorrect', 'Pairs', 'Title', ...
+    'Name', 'Units'};
 if nargin < 1, files = []; end
 haveBase = nargin >= 2 && ~(isnumeric(baselineFile) && isempty(baselineFile));
 if (ischar(files) || isstring(files)) && any(strcmpi(char(files), optNames))
@@ -65,14 +72,23 @@ p.addParameter("Save", false);
 p.addParameter("Labels", true);
 p.addParameter("Plot", true);
 p.addParameter("Floor", 0);          % G; earlier-run |B| below this -> left out
-p.addParameter("CLim", []);          % %; [] = largest change in the data
+p.addParameter("CLim", []);          % % or mG; [] = largest change in the data
 p.addParameter("R", []);
 p.addParameter("TiltCorrect", false);
 p.addParameter("Pairs", []);         % nPair x 2 run numbers; [] = consecutive
 p.addParameter("Title", "");
 p.addParameter("Name", "heatmap_change");
+p.addParameter("Units", "%");        % "%" or "mG"
 p.parse(varargin{:});
 opt = p.Results;
+units = char(opt.Units);
+if any(strcmpi(units, {'mG', 'milligauss'}))
+    units = 'mG';
+elseif any(strcmpi(units, {'%', 'pct', 'percent'}))
+    units = '%';
+else
+    error('"Units" must be "%%" or "mG", not "%s".', units);
+end
 
 if isempty(files)
     [files, folder] = pick_runs();
@@ -114,7 +130,7 @@ for r = 1:nRun
     Bmag(found, r) = sqrt(sum(Br(loc(found), :).^2, 2));
 end
 
-% --- percentage change, run a -> run b of each pair ---
+% --- change, run a -> run b of each pair, in % and in mG ---
 ab = opt.Pairs;
 if isempty(ab), ab = [(1:nRun - 1).' (2:nRun).']; end
 if size(ab, 2) ~= 2 || any(ab(:) < 1 | ab(:) > nRun | ab(:) ~= round(ab(:)))
@@ -122,30 +138,43 @@ if size(ab, 2) ~= 2 || any(ab(:) < 1 | ab(:) > nRun | ab(:) ~= round(ab(:)))
 end
 nPair = size(ab, 1);
 pct = nan(size(P, 1), nPair);
+dmG = nan(size(P, 1), nPair);
 pairs = cell(nPair, 1);
 for k = 1:nPair
     a = Bmag(:, ab(k, 1)); b = Bmag(:, ab(k, 2));
-    ok = isfinite(a) & isfinite(b) & a > max(opt.Floor, eps);
+    ok = isfinite(a) & isfinite(b);
+    dmG(ok, k) = 1000 * (b(ok) - a(ok));
+    ok = ok & a > max(opt.Floor, eps);
     pct(ok, k) = 100 * (b(ok) - a(ok)) ./ a(ok);
     pairs{k} = sprintf("%d -> %d", ab(k, 1), ab(k, 2));
 end
+if strcmp(units, 'mG')
+    chg = dmG; uLabel = 'mG'; uFmt = '%+.1f'; uName = 'in mG'; lastName = 'rms';
+else
+    chg = pct; uLabel = '%'; uFmt = '%+.1f%%'; uName = '% of the earlier run'; lastName = 'total';
+end
+u = strrep(uLabel, '%', '%%');       % the unit inside a printf format
 
 % --- summary per pair ---
-meanPct = nan(nPair, 1); meanAbs = meanPct; medAbs = meanPct; largest = meanPct;
-totalPct = meanPct; nPts = zeros(nPair, 1); largestAt = nan(nPair, 3);
+meanChg = nan(nPair, 1); meanAbs = meanChg; medAbs = meanChg; largest = meanChg;
+lastCol = meanChg; nPts = zeros(nPair, 1); largestAt = nan(nPair, 3);
 for k = 1:nPair
-    v = pct(:, k); ok = isfinite(v);
+    v = chg(:, k); ok = isfinite(v);
     nPts(k) = nnz(ok);
     if ~any(ok), continue; end
-    meanPct(k) = mean(v(ok));
+    meanChg(k) = mean(v(ok));
     meanAbs(k) = mean(abs(v(ok)));
     medAbs(k) = median(abs(v(ok)));
     av = abs(v); av(~ok) = -Inf;
     [~, i] = max(av);
     largest(k) = v(i);
     largestAt(k, :) = P(i, :);
-    a = Bmag(ok, ab(k, 1)); b = Bmag(ok, ab(k, 2));
-    totalPct(k) = 100 * (sum(b) - sum(a)) / sum(a);
+    if strcmp(units, 'mG')
+        lastCol(k) = sqrt(mean(v(ok).^2));                  % RMS change, mG
+    else
+        a = Bmag(ok, ab(k, 1)); b = Bmag(ok, ab(k, 2));
+        lastCol(k) = 100 * (sum(b) - sum(a)) / sum(a);      % change in the total, %
+    end
 end
 
 what = 'Raw |B|';
@@ -154,29 +183,37 @@ if ~isempty(baselineFile)
     what = ['|B| minus ' n0];
 end
 if ~isempty(opt.Title), what = [char(opt.Title) ', ' what]; end
-fprintf('\nChange in %s between runs, %% of the earlier run\n\n', what);
+fprintf(['\nChange in %s between runs, ' strrep(uName, '%', '%%') '\n\n'], what);
 for r = 1:nRun, fprintf('  run %d  %s\n', r, names{r}); end
 runs = cell(nPair, 1);
 for k = 1:nPair, runs{k} = [names{ab(k, 1)} ' -> ' names{ab(k, 2)}]; end
 w = max(cellfun(@numel, runs));
-fprintf(['\n  %-7s %-' num2str(w) 's %8s %8s %8s %9s  %-18s %8s %4s\n'], 'pair', 'runs', 'mean', ...
-    'mean|%|', 'med|%|', 'largest', 'at (x, y, z) mm', 'total', 'pts');
+nw = num2str(9 - numel(uLabel));     % number width, so the unit fits the column
+sgn = '+';
+if strcmp(units, 'mG'), sgn = ''; end   % rms is never negative
+fprintf(['\n  %-7s %-' num2str(w) 's %9s %9s %9s %9s  %-18s %9s %4s\n'], 'pair', 'runs', 'mean', ...
+    ['mean|' uLabel '|'], ['med|' uLabel '|'], 'largest', 'at (x, y, z) mm', lastName, 'pts');
 for k = 1:nPair
-    fprintf(['  %-7s %-' num2str(w) 's %+7.1f%% %7.1f%% %7.1f%% %+8.1f%%  %-18s %+7.1f%% %4d\n'], ...
-        pairs{k}, runs{k}, meanPct(k), meanAbs(k), medAbs(k), ...
-        largest(k), sprintf('(%.0f, %.0f, %.0f)', largestAt(k, :)), totalPct(k), nPts(k));
+    fprintf(['  %-7s %-' num2str(w) 's %+' nw '.1f' u ' %' nw '.1f' u ' %' nw '.1f' u ...
+        ' %+' nw '.1f' u '  %-18s %' sgn nw '.1f' u ' %4d\n'], ...
+        pairs{k}, runs{k}, meanChg(k), meanAbs(k), medAbs(k), ...
+        largest(k), sprintf('(%.0f, %.0f, %.0f)', largestAt(k, :)), lastCol(k), nPts(k));
 end
-fprintf(['\n  mean: average change (+ stronger, - weaker)   mean|%%| / med|%%|: average / median\n' ...
-    '  size of the change   largest: biggest change, at the point given   total: change in\n' ...
-    '  |B| summed over the grid   pts: points compared\n\n']);
+fprintf(['\n  mean: average change (+ stronger, - weaker)   mean|.| / med|.|: average / median\n' ...
+    '  size of the change   largest: biggest change, at the point given   pts: points compared\n']);
+if strcmp(units, 'mG')
+    fprintf('  rms: root-mean-square change over the grid   (1 mG = 0.1 uT)\n\n');
+else
+    fprintf('  total: change in |B| summed over the grid\n\n');
+end
 
 D = struct("files", {files}, "names", {names}, "P", P, "Bmag", Bmag, "pct", pct, ...
-    "pairs", {pairs}, "pair_runs", ab, "mean_pct", meanPct, "mean_abs_pct", meanAbs, ...
-    "median_abs_pct", medAbs, "largest_pct", largest, "largest_at_mm", largestAt, ...
-    "total_pct", totalPct, "n_points", nPts);
+    "dmG", dmG, "units", units, "pairs", {pairs}, "pair_runs", ab, "mean", meanChg, ...
+    "mean_abs", meanAbs, "median_abs", medAbs, "largest", largest, ...
+    "largest_at_mm", largestAt, "total_or_rms", lastCol, "n_points", nPts);
 if ~opt.Plot, return; end
 
-% --- 1: percentage-change maps, one column per pair, one row per z layer ---
+% --- 1: change maps, one column per pair, one row per z layer ---
 xs = unique(P(:, 1)); ys = unique(P(:, 2)); zs = sort(unique(P(:, 3)), "descend");
 nz = numel(zs);
 if numel(xs) < 2 || numel(ys) < 2
@@ -185,7 +222,7 @@ end
 dx = min(diff(xs)); dy = min(diff(ys));
 pad = [-0.5 0.5];
 cl = opt.CLim;
-if isempty(cl), cl = max(abs(pct(isfinite(pct)))); end
+if isempty(cl), cl = max(abs(chg(isfinite(chg)))); end
 if isempty(cl) || ~isfinite(cl(end)) || cl(end) == 0, cl = 1; end
 cl = [-1 1] * abs(cl(end));
 [X, Y] = meshgrid(xs, ys);
@@ -196,14 +233,14 @@ f1 = figure("Name", "Heat map change between runs", "Color", "w", ...
 for iz = 1:nz
     for k = 1:nPair
         subplot(nz, nPair, (iz - 1) * nPair + k);
-        M = to_grid(P, pct(:, k), xs, ys, zs(iz));
+        M = to_grid(P, chg(:, k), xs, ys, zs(iz));
         Mf = interp2(xs, ys, M, xf, yf, "linear");
         imagesc(xf(1, :), yf(:, 1), Mf, "AlphaData", double(~isnan(Mf))); hold on
         set(gca, "YDir", "normal");
         plot(X(:), Y(:), "k.", "MarkerSize", 8);
         if opt.Labels
             for i = find(~isnan(M(:)))'
-                text(X(i), Y(i) + 0.22 * dy, sprintf("%+.0f%%", M(i)), "FontSize", 7, ...
+                text(X(i), Y(i) + 0.22 * dy, sprintf(uFmt, M(i)), "FontSize", 7, ...
                     "HorizontalAlignment", "center", "Color", [0.1 0.1 0.1]);
             end
         end
@@ -215,30 +252,31 @@ for iz = 1:nz
         xlabel("x (mm)"); ylabel("y (mm)");
         v = M(isfinite(M));
         title({names{ab(k, 1)}, ['->  ' names{ab(k, 2)}], ...
-            sprintf("z = %.0f mm, mean %+.1f %%", zs(iz), mean(v))}, ...
+            sprintf(['z = %.0f mm, mean %+.1f ' u], zs(iz), mean(v))}, ...
             "Interpreter", "none", "FontSize", 9);
         if k == nPair
-            cb = colorbar; ylabel(cb, "change in |B| (%)");
+            cb = colorbar; ylabel(cb, ['change in |B| (' uLabel ')']);
         end
     end
 end
-suptitle_compat(f1, sprintf("%s: change between runs, %% of the earlier run", what));
+suptitle_compat(f1, [what ': change between runs, ' uName]);
 
 % --- 2: summary per pair ---
 f2 = figure("Name", "Heat map change summary", "Color", "w", "Position", [100 100 760 420]);
-bar(1:nPair, [meanPct meanAbs totalPct]);
+bar(1:nPair, [meanChg meanAbs lastCol]);
 hold on; plot([0.5 nPair + 0.5], [0 0], "k-"); hold off
 set(gca, "XTick", 1:nPair, "XTickLabel", pairs);
 xlim([0.5 nPair + 0.5]);
-xlabel("runs compared"); ylabel("change (%)");
-legend({"mean change (signed)", "mean size of change |%|", "total field over the grid"}, ...
-    "Location", "best");
+xlabel("runs compared"); ylabel(['change (' uLabel ')']);
+if strcmp(units, 'mG'), third = 'RMS change over the grid'; else, third = 'total field over the grid'; end
+legend({'mean change (signed)', 'mean size of change', third}, "Location", "best");
 grid on
 title(sprintf("%s: change between runs", what), "Interpreter", "none");
 
 if opt.Save
     d = fileparts(files{1});
     n = char(opt.Name);
+    if strcmp(units, 'mG'), n = [n '_mG']; end
     print(f1, fullfile(d, [n '.png']), '-dpng', '-r150');
     print(f2, fullfile(d, [n '_summary.png']), '-dpng', '-r150');
     fprintf("Saved %s.png and %s_summary.png in %s\n", n, n, d);
