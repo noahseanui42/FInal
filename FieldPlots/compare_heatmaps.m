@@ -1,12 +1,19 @@
 function D = compare_heatmaps(files, baselineFile, varargin)
 % compare_heatmaps — percentage change in the |B| heat map from one run to the next.
 %
-%   compare_heatmaps()                       % the five dipole runs (DIPOLE_TEST.md)
-%                                            % minus the no-magnet background
-%   compare_heatmaps(files)                  % your own runs, compared in the order given
-%   compare_heatmaps("data/dipole_*.csv")    % wildcard: runs sorted by their time stamp
+%   compare_heatmaps()                       % pick the runs in a file dialog (Ctrl+click
+%                                            % for several), then the no-magnet background
+%                                            % (Cancel = none); runs sorted by time stamp
+%   compare_heatmaps(files)                  % runs compared in the order given, e.g.
+%                                            % {"run1.csv", "run2.csv", "run3.csv"}
+%   compare_heatmaps("C:\scans\run*.csv")   % wildcard: runs sorted by their time stamp
 %   compare_heatmaps(files, baselineFile)    % subtract a background scan from every run
 %   compare_heatmaps(files, "")              % raw field (includes Earth's field)
+%   compare_heatmaps([], baselineFile)       % pick the runs, background given
+%   compare_heatmaps("Save", true)           % pick the files, with options
+%
+% File names can be full paths or relative to MATLAB's current folder. This file is
+% all it needs; apply_tilt.m and tilt_correct.m only with "TiltCorrect".
 %   compare_heatmaps(..., "Save", true)      % also save PNGs next to the first CSV
 %   compare_heatmaps(..., "Labels", false)   % no values printed on the maps
 %   compare_heatmaps(..., "Floor", 0.02)     % leave out points where the earlier run's
@@ -38,6 +45,21 @@ function D = compare_heatmaps(files, baselineFile, varargin)
 % D is a struct: files, names, P (points, mm), Bmag (N x nRun, G), pct (N x nPair, %),
 % pairs (labels) and the summary columns (one value per pair).
 
+optNames = {'Save', 'Labels', 'Plot', 'Floor', 'CLim', 'R', 'TiltCorrect', 'Pairs', 'Title', 'Name'};
+if nargin < 1, files = []; end
+haveBase = nargin >= 2 && ~(isnumeric(baselineFile) && isempty(baselineFile));
+if (ischar(files) || isstring(files)) && any(strcmpi(char(files), optNames))
+    % compare_heatmaps("Save", true, ...): options only, so pick the files
+    if nargin >= 2, varargin = [{files, baselineFile}, varargin]; else, varargin = {files}; end
+    files = [];
+    haveBase = false;
+elseif haveBase && (ischar(baselineFile) || isstring(baselineFile)) && ...
+        any(strcmpi(char(baselineFile), optNames))
+    % compare_heatmaps(files, "Save", true): no background, options start here
+    varargin = [{baselineFile}, varargin];
+    haveBase = false;
+end
+
 p = inputParser;
 p.addParameter("Save", false);
 p.addParameter("Labels", true);
@@ -52,20 +74,13 @@ p.addParameter("Name", "heatmap_change");
 p.parse(varargin{:});
 opt = p.Results;
 
-if nargin < 1 || isempty(files)
-    % the five dipole known-position runs, in the order they were taken
-    dipoleDir = fullfile(fileparts(mfilename("fullpath")), "..", "FieldTiltScan", "data");
-    files = fullfile(dipoleDir, {'dipole_y0_20261004_181805.csv'
-                                 'dipole_y+100_20261004_183221.csv'
-                                 'dipole_y-100_20261004_184523.csv'
-                                 'dipole_x-50_20261004_185954.csv'
-                                 'dipole_x+50_20261004_191247.csv'});
-    if nargin < 2 || (isnumeric(baselineFile) && isempty(baselineFile))
-        baselineFile = fullfile(dipoleDir, "full25-4z_corr-hybrid_none_20261004_155505.csv");
-    end
+if isempty(files)
+    [files, folder] = pick_runs();
+    if ~haveBase, baselineFile = pick_background(folder); end
+else
+    files = list_files(files);
+    if ~haveBase, baselineFile = ''; end
 end
-if ~exist("baselineFile", "var"), baselineFile = ''; end
-files = list_files(files);
 baselineFile = char(baselineFile);
 nRun = numel(files);
 if nRun < 2, error("Need at least 2 runs to compare, got %d.", nRun); end
@@ -231,23 +246,58 @@ end
 end
 
 
+function [files, folder] = pick_runs()
+% file dialog for the runs; sorted by the time stamp in their names when they all have one
+[f, folder] = uigetfile({'*.csv', 'Scan CSVs (*.csv)'}, ...
+    'Pick the runs to compare (Ctrl+click or Shift+click for several)', 'MultiSelect', 'on');
+if isequal(f, 0), error("No runs picked."); end
+files = fullfile(folder, cellstr(f));
+files = sort_by_stamp(files(:));
+end
+
+
+function baselineFile = pick_background(folder)
+[f, d] = uigetfile({'*.csv', 'Scan CSVs (*.csv)'}, ...
+    'Pick the no-magnet background scan (Cancel = no background)', folder);
+if isequal(f, 0)
+    baselineFile = '';
+    fprintf('No background picked: comparing the raw field (includes Earth''s field).\n');
+else
+    baselineFile = fullfile(d, f);
+end
+end
+
+
+function files = sort_by_stamp(files)
+stamp = regexp(files, '\d{8}_\d{6}', 'match', 'once');
+if all(~cellfun(@isempty, stamp))
+    [~, order] = sort(stamp);
+else
+    [~, order] = sort(files);
+end
+files = files(order);
+end
+
+
 function files = list_files(files)
 % cell of CSV paths, from a string array / cell, or one wildcard pattern (sorted by
 % the time stamp in the names, i.e. the order the runs were taken)
 files = cellstr(files);
 if numel(files) == 1 && any(files{1} == '*' | files{1} == '?')
     d = dir(files{1});
-    if isempty(d), error("No files match %s.", files{1}); end
-    files = fullfile({d.folder}, {d.name});
-    stamp = regexp(files, '\d{8}_\d{6}', 'match', 'once');
-    if all(~cellfun(@isempty, stamp))
-        [~, order] = sort(stamp);
-        files = files(order);
+    if isempty(d)
+        error(['No files match %s in %s.\nGo to the folder with the CSVs (cd, or the ' ...
+            'Current Folder panel), give the full path, or run compare_heatmaps() to ' ...
+            'pick the files.'], files{1}, pwd);
     end
+    files = sort_by_stamp(fullfile({d.folder}, {d.name}).');
 end
 files = files(:);
 for r = 1:numel(files)
-    if ~isfile(files{r}), error("Cannot find %s (looked in %s).", files{r}, pwd); end
+    if ~isfile(files{r})
+        error("Cannot find %s (looked in %s). Give the full path, or run compare_heatmaps() to pick the files.", ...
+            files{r}, pwd);
+    end
 end
 end
 
@@ -256,7 +306,8 @@ function [P, B] = load_field(file, baselineFile, R, tc)
 % positions and field (robot axes, background subtracted) of one scan
 T = read_scan(file);
 P = [T.x_mm T.y_mm T.z_mm];
-B = apply_tilt([T.Bx_G T.By_G T.Bz_G], file, tc, baselineFile);
+B = [T.Bx_G T.By_G T.Bz_G];
+if tilt_on(tc), B = apply_tilt(B, file, tc, baselineFile); end
 if ~isempty(baselineFile)
     T0 = read_scan(baselineFile);
     [found, loc] = ismember(round(10 * P), round(10 * [T0.x_mm T0.y_mm T0.z_mm]), "rows");
@@ -266,12 +317,19 @@ if ~isempty(baselineFile)
         warning("%d of %d points of %s have no baseline at the same position and are left out.", ...
             nnz(~found), numel(found), file);
     end
-    B0all = apply_tilt([T0.Bx_G T0.By_G T0.Bz_G], baselineFile, tc, baselineFile);
+    B0all = [T0.Bx_G T0.By_G T0.Bz_G];
+    if tilt_on(tc), B0all = apply_tilt(B0all, baselineFile, tc, baselineFile); end
     B0 = nan(size(B));
     B0(found, :) = B0all(loc(found), :);
     B = B - B0;
 end
 B = (R * B.').';                     % sensor axes -> robot axes
+end
+
+
+function on = tilt_on(tc)
+% the "TiltCorrect" option is set (true or a reference), so apply_tilt is needed
+on = ~(isempty(tc) || ((islogical(tc) || isnumeric(tc)) && isscalar(tc) && ~tc));
 end
 
 

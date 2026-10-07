@@ -82,15 +82,18 @@ plot_field_layers("data/magnet_tilt_20261002_223300.csv", "", "TiltCorrect", tru
 fit_dipole("data/magnet_tilt_20261002_223300_tiltcorr.csv")
 ```
 
-`compare_heatmaps()` with no arguments compares the five dipole runs
-(`DIPOLE_TEST.md`) in the order they were taken, each minus the no-magnet
-background: change = 100 × (|B| of run k+1 − |B| of run k) / |B| of run k.
-Give it your own files (or a wildcard, sorted by time stamp) for other runs:
+`compare_heatmaps` works on any runs: change = 100 × (|B| of run k+1 − |B| of
+run k) / |B| of run k at every point, each run minus a background scan if you give
+one. With no file names it opens a file dialog: pick the runs (Ctrl+click for
+several; they're sorted by the time stamp in their names), then the no-magnet
+scan (Cancel for none). It needs only `compare_heatmaps.m` itself, so it can be
+copied into any folder of CSVs.
 
 ```matlab
-compare_heatmaps()                                         % the five dipole runs
+compare_heatmaps()                                         % pick the files
+compare_heatmaps("Save", true)                             % pick, and save PNGs next to them
 compare_heatmaps("data/dipole_*.csv", "data/full25-4z_corr-hybrid_none_20261004_155505.csv")
-D = compare_heatmaps([], [], "Save", true);                % + heatmap_change*.png in data/
+compare_heatmaps({"run1.csv", "run2.csv", "run3.csv"}, "background.csv")   % in this order
 ```
 
 `plot_field_layers`, `plot_field_arrows3d` and `plot_field_map` take
