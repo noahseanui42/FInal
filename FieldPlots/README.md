@@ -98,6 +98,9 @@ compare_heatmaps("data/dipole_*.csv", "data/full25-4z_corr-hybrid_none_20261004_
 compare_heatmaps({"run1.csv", "run2.csv", "run3.csv"}, "background.csv")   % in this order
 ```
 
+Step-by-step instructions for these (setup, options, % vs mG, troubleshooting):
+[`HEATMAP_COMPARISON.md`](HEATMAP_COMPARISON.md).
+
 `plot_field_layers`, `plot_field_arrows3d` and `plot_field_map` take
 `"TiltCorrect", true` only for scans with accelerometer columns (from
 `field_scan_tilt.py`). Without the option they behave as before and work on
