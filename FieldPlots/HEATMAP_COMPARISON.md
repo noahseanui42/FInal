@@ -138,6 +138,22 @@ repeatability_heatmaps("2oct")             % 2 Oct: correction off, hybrid and m
 repeatability_heatmaps("Units", "mG")      % takes every compare_heatmaps option
 ```
 
+## Zooming in
+
+Click any map (in either script) to open it on its own in a big window, with larger
+labels and zoom switched on:
+
+- **Click** to zoom in, **Shift+click** to zoom out, **double-click** to go back.
+- Scroll the mouse wheel or trackpad to zoom in and out.
+- The window can be resized or made full screen.
+
+To click another map afterwards, go back to the original figure. If zoom or pan is
+switched on there, turn it off first (click the magnifier icon again), or clicks won't
+open the zoom window.
+
+You can also zoom the original figures directly: hover over a map and use the magnifier
+and hand icons that appear at its top-right corner.
+
 ## Percent or mG?
 
 - **Percent** is the change relative to the field at that point. With the no-magnet run

@@ -37,6 +37,9 @@ function D = compare_repeat_heatmaps(folder, varargin)
 %           the grid (%) or the RMS change (mG).
 % Command window: the same numbers as a table.
 %
+% Click any map to open it on its own in a big window (larger text, zoom on: click to
+% zoom in, Shift+click to zoom out, double-click to reset).
+%
 % D: files, reference, P (points, mm), Bmag (N x 5, magnet only, G), Bref (N x 1, raw
 % no-magnet |B|, G), pct (N x 4, %), dmG (N x 4, mG), units, and the summary numbers per
 % pair in those units.
@@ -158,6 +161,7 @@ D = struct("files", {runs}, "reference", ref, "P", P, "Bmag", Bmag, "Bref", Bref
     "mean_abs", meanAbs, "median_abs", medAbs, "largest", largest, ...
     "largest_at_mm", largestAt, "total_or_rms", lastCol);
 if ~opt.Plot, return; end
+fprintf('Click any map to open it in its own window, where you can zoom.\n\n');
 
 % --- grid ---
 xs = unique(P(:, 1)); ys = unique(P(:, 2)); zs = sort(unique(P(:, 3)), "descend");
@@ -178,12 +182,12 @@ if diff(limRef) == 0, limRef = limRef + [-1 1] * 1e-3; end
 if diff(limRun) == 0, limRun = limRun + [-1 1] * 1e-3; end
 for iz = 1:nz
     subplot(nz, nRun + 1, (iz - 1) * (nRun + 1) + 1);
-    map_panel(to_grid(P, Bref, xs, ys, zs(iz)), fmt, limRef, seq_map(), "%.3f");
+    map_panel(to_grid(P, Bref, xs, ys, zs(iz)), fmt, limRef, seq_map(), "%.3f", "|B| (G)");
     title({"No magnet (reference)", sprintf("raw, z = %.0f mm", zs(iz))}, "FontSize", 9);
     cb = colorbar; ylabel(cb, "|B| (G)");
     for r = 1:nRun
         subplot(nz, nRun + 1, (iz - 1) * (nRun + 1) + 1 + r);
-        map_panel(to_grid(P, Bmag(:, r), xs, ys, zs(iz)), fmt, limRun, seq_map(), "%.3f");
+        map_panel(to_grid(P, Bmag(:, r), xs, ys, zs(iz)), fmt, limRun, seq_map(), "%.3f", "|B| (G)");
         ylabel("");                    % same y axis as the reference panel
         title({sprintf("Run %d", r), sprintf("magnet only, z = %.0f mm", zs(iz))}, "FontSize", 9);
         if r == nRun, cb = colorbar; ylabel(cb, "|B| (G)"); end
@@ -200,7 +204,7 @@ for iz = 1:nz
     for k = 1:nPair
         subplot(nz, nPair, (iz - 1) * nPair + k);
         M = to_grid(P, chg(:, k), xs, ys, zs(iz));
-        map_panel(M, fmt, [-cl cl], redblue(256), uFmt);
+        map_panel(M, fmt, [-cl cl], redblue(256), uFmt, ['change in |B| (' uLabel ')']);
         v = M(isfinite(M));
         title({sprintf("Run %d -> run %d", k, k + 1), ...
             sprintf(['z = %.0f mm, mean |change| %.1f ' u], zs(iz), mean(abs(v)))}, "FontSize", 9);
@@ -271,15 +275,15 @@ end
 end
 
 
-function map_panel(M, g, lim, cmap, labelFmt)
+function map_panel(M, g, lim, cmap, labelFmt, cbLabel)
 Mf = interp2(g.xs, g.ys, M, g.xf, g.yf, "linear");
-imagesc(g.xf(1, :), g.yf(:, 1), Mf, "AlphaData", double(~isnan(Mf))); hold on
+hImg = imagesc(g.xf(1, :), g.yf(:, 1), Mf, "AlphaData", double(~isnan(Mf))); hold on
 set(gca, "YDir", "normal");
-plot(g.X(:), g.Y(:), "k.", "MarkerSize", 8);
+plot(g.X(:), g.Y(:), "k.", "MarkerSize", 8, "HitTest", "off");
 if g.labels
     for i = find(~isnan(M(:)))'
         text(g.X(i), g.Y(i) + 0.22 * g.dy, sprintf(labelFmt, M(i)), "FontSize", 6, ...
-            "HorizontalAlignment", "center", "Color", [0.1 0.1 0.1]);
+            "HorizontalAlignment", "center", "Color", [0.1 0.1 0.1], "HitTest", "off");
     end
 end
 hold off
@@ -288,6 +292,40 @@ axis equal tight
 set(gca, "XTick", g.xs, "YTick", g.ys);
 xlim([g.xs(1) g.xs(end)] + [-0.5 0.5] * g.dx); ylim([g.ys(1) g.ys(end)] + [-0.5 0.5] * g.dy);
 xlabel("x (mm)"); ylabel("y (mm)");
+enable_popout(gca, hImg, cbLabel);
+end
+
+
+function enable_popout(ax, hImg, cbLabel)
+% click a map (or the space around it) to open it on its own, bigger, in a new window
+cb = @(src, ~) popout(src, cbLabel);
+set(hImg, "ButtonDownFcn", cb);
+set(ax, "ButtonDownFcn", cb);
+end
+
+
+function popout(src, cbLabel)
+% copy the clicked map into its own window: big, larger text, zoom switched on
+ax = ancestor(src, "axes");
+t = get(get(ax, "Title"), "String");          % one line, or several (cell or char rows)
+if ischar(t), t = cellstr(t); end
+name = strjoin(cellfun(@(c) strtrim(char(c)), t(:).', 'UniformOutput', false), ', ');
+scr = get(0, "ScreenSize");
+if scr(4) < 400, scr = [1 1 1280 1000]; end   % no screen size reported: use a sensible one
+h = round(0.85 * scr(4)); w = round(min(0.9 * scr(3), 0.8 * h));
+f = figure("Name", ['Zoom: ' name], "Color", "w", "Position", [60 40 w h]);
+nax = copyobj(ax, f);
+set(nax, "Units", "normalized", "Position", [0.12 0.08 0.7 0.84], "FontSize", 11);
+set(findobj(nax), "ButtonDownFcn", "");      % clicks in the copy don't open another
+colormap(nax, colormap(ax));
+caxis(nax, caxis(ax));
+set(findobj(nax, "Type", "text"), "FontSize", 11);
+set(findobj(nax, "Type", "line"), "MarkerSize", 14);
+set(get(nax, "Title"), "FontSize", 13);
+a = findall(f, "Type", "axes");
+delete(a(a ~= nax));                         % Octave copies the map's colour bar as extra axes
+cb = colorbar(nax); ylabel(cb, cbLabel);
+zoom(f, "on");                               % click to zoom in, Shift+click out, double-click resets
 end
 
 
