@@ -46,6 +46,7 @@ the CSV. `plot_field_layers` draws four figures; `"Figures"` picks some of them:
 | `compare_repeatability.m` | Two `compare_runs` results side by side, e.g. correction off vs hybrid |
 | `plot_repeatability_layers.m` | A `compare_runs` result as maps, one panel per z layer |
 | `compare_positions.m` | Repeatability at several magnet positions |
+| `repeatability_heatmaps.m` | % difference in the \|B\| heat map between repeated scans of the same setup (off, hybrid, magnet-under pairs) |
 
 ```matlab
 off = compare_runs("data/magnet-xpos_corr-off_run*.csv", "data/nomagnet_corr-off_run1_20261002_172221.csv");
@@ -53,6 +54,12 @@ hyb = compare_runs("data/magnet-xpos_corr-hybrid_run*.csv", "data/nomagnet_corr-
 compare_repeatability(off, hyb)
 plot_repeatability_layers(hyb)
 ```
+
+`repeatability_heatmaps()` maps the same repeat runs as a % difference per point:
+correction off run 1 → run 2, hybrid run 1 → run 2 and the magnet-under pair,
+each minus the no-magnet background. It uses `compare_heatmaps` (below), so it
+takes the same options, e.g. `"Save", true` or `"Pairs", [1 3; 3 2; 2 4]` for
+the four +x runs in time order.
 
 ## Tilt (FieldTiltScan scans)
 
@@ -63,7 +70,7 @@ plot_repeatability_layers(hyb)
 | `apply_tilt.m` | What the plots' `"TiltCorrect"` option runs |
 | `fit_dipole.m` | Point-dipole fit (moment + position) with residuals |
 | `compare_tilt_runs.m` | Repeated tilt scans: repeatability and dipole-fit accuracy, raw vs tilt-corrected |
-| `compare_heatmaps.m` | % change in the \|B\| heat map from each run to the next (1→2, 2→3, …), per point and per z layer |
+| `compare_heatmaps.m` | % change in the \|B\| heat map from each run to the next (1→2, 2→3, …, or chosen `"Pairs"`), per point and per z layer |
 
 ```matlab
 cd FieldTiltScan

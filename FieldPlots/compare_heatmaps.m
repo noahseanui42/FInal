@@ -14,11 +14,15 @@ function D = compare_heatmaps(files, baselineFile, varargin)
 %   compare_heatmaps(..., "CLim", 100)       % colour scale fixed at -100..+100 %
 %   compare_heatmaps(..., "TiltCorrect", true)   % remove the probe's tilt first
 %   compare_heatmaps(..., "R", R)            % sensor -> robot rotation
+%   compare_heatmaps(..., "Pairs", [1 2; 3 4])   % compare these runs instead of 1->2, 2->3, ...
+%   compare_heatmaps(..., "Title", "Repeatability")  % prefix for the figure titles
+%   compare_heatmaps(..., "Name", "repeat")  % PNG names with "Save" (default heatmap_change)
 %   D = compare_heatmaps(..., "Plot", false) % numbers only
 %
-% Run k is compared with run k+1 (1 -> 2, 2 -> 3, ...) at every grid point:
+% Run k is compared with run k+1 (1 -> 2, 2 -> 3, ...) at every grid point, or each
+% row [a b] of "Pairs" compares run a with run b:
 %
-%   change (%) = 100 * (|B|_k+1 - |B|_k) / |B|_k
+%   change (%) = 100 * (|B|_b - |B|_a) / |B|_a
 %
 % so +50 % means the field at that point got 50 % stronger in the later run.
 % |B| is the same quantity plot_field_layers shows in its heat map (figure 1),
@@ -42,6 +46,9 @@ p.addParameter("Floor", 0);          % G; earlier-run |B| below this -> left out
 p.addParameter("CLim", []);          % %; [] = largest change in the data
 p.addParameter("R", []);
 p.addParameter("TiltCorrect", false);
+p.addParameter("Pairs", []);         % nPair x 2 run numbers; [] = consecutive
+p.addParameter("Title", "");
+p.addParameter("Name", "heatmap_change");
 p.parse(varargin{:});
 opt = p.Results;
 
@@ -92,15 +99,20 @@ for r = 1:nRun
     Bmag(found, r) = sqrt(sum(Br(loc(found), :).^2, 2));
 end
 
-% --- percentage change, run k -> run k+1 ---
-nPair = nRun - 1;
+% --- percentage change, run a -> run b of each pair ---
+ab = opt.Pairs;
+if isempty(ab), ab = [(1:nRun - 1).' (2:nRun).']; end
+if size(ab, 2) ~= 2 || any(ab(:) < 1 | ab(:) > nRun | ab(:) ~= round(ab(:)))
+    error("Pairs must be rows [a b] of run numbers 1..%d.", nRun);
+end
+nPair = size(ab, 1);
 pct = nan(size(P, 1), nPair);
 pairs = cell(nPair, 1);
 for k = 1:nPair
-    a = Bmag(:, k); b = Bmag(:, k + 1);
+    a = Bmag(:, ab(k, 1)); b = Bmag(:, ab(k, 2));
     ok = isfinite(a) & isfinite(b) & a > max(opt.Floor, eps);
     pct(ok, k) = 100 * (b(ok) - a(ok)) ./ a(ok);
-    pairs{k} = sprintf("%d -> %d", k, k + 1);
+    pairs{k} = sprintf("%d -> %d", ab(k, 1), ab(k, 2));
 end
 
 % --- summary per pair ---
@@ -117,7 +129,8 @@ for k = 1:nPair
     [~, i] = max(av);
     largest(k) = v(i);
     largestAt(k, :) = P(i, :);
-    totalPct(k) = 100 * (sum(Bmag(ok, k + 1)) - sum(Bmag(ok, k))) / sum(Bmag(ok, k));
+    a = Bmag(ok, ab(k, 1)); b = Bmag(ok, ab(k, 2));
+    totalPct(k) = 100 * (sum(b) - sum(a)) / sum(a);
 end
 
 what = 'Raw |B|';
@@ -125,13 +138,17 @@ if ~isempty(baselineFile)
     [~, n0] = fileparts(baselineFile);
     what = ['|B| minus ' n0];
 end
-fprintf('\nChange in %s from one run to the next, %% of the earlier run\n\n', what);
+if ~isempty(opt.Title), what = [char(opt.Title) ', ' what]; end
+fprintf('\nChange in %s between runs, %% of the earlier run\n\n', what);
 for r = 1:nRun, fprintf('  run %d  %s\n', r, names{r}); end
-fprintf('\n  %-7s %-30s %8s %8s %8s %9s  %-18s %8s %4s\n', 'pair', 'runs', 'mean', ...
+runs = cell(nPair, 1);
+for k = 1:nPair, runs{k} = [names{ab(k, 1)} ' -> ' names{ab(k, 2)}]; end
+w = max(cellfun(@numel, runs));
+fprintf(['\n  %-7s %-' num2str(w) 's %8s %8s %8s %9s  %-18s %8s %4s\n'], 'pair', 'runs', 'mean', ...
     'mean|%|', 'med|%|', 'largest', 'at (x, y, z) mm', 'total', 'pts');
 for k = 1:nPair
-    fprintf('  %-7s %-30s %+7.1f%% %7.1f%% %7.1f%% %+8.1f%%  %-18s %+7.1f%% %4d\n', ...
-        pairs{k}, [names{k} ' -> ' names{k + 1}], meanPct(k), meanAbs(k), medAbs(k), ...
+    fprintf(['  %-7s %-' num2str(w) 's %+7.1f%% %7.1f%% %7.1f%% %+8.1f%%  %-18s %+7.1f%% %4d\n'], ...
+        pairs{k}, runs{k}, meanPct(k), meanAbs(k), medAbs(k), ...
         largest(k), sprintf('(%.0f, %.0f, %.0f)', largestAt(k, :)), totalPct(k), nPts(k));
 end
 fprintf(['\n  mean: average change (+ stronger, - weaker)   mean|%%| / med|%%|: average / median\n' ...
@@ -139,7 +156,7 @@ fprintf(['\n  mean: average change (+ stronger, - weaker)   mean|%%| / med|%%|: 
     '  |B| summed over the grid   pts: points compared\n\n']);
 
 D = struct("files", {files}, "names", {names}, "P", P, "Bmag", Bmag, "pct", pct, ...
-    "pairs", {pairs}, "mean_pct", meanPct, "mean_abs_pct", meanAbs, ...
+    "pairs", {pairs}, "pair_runs", ab, "mean_pct", meanPct, "mean_abs_pct", meanAbs, ...
     "median_abs_pct", medAbs, "largest_pct", largest, "largest_at_mm", largestAt, ...
     "total_pct", totalPct, "n_points", nPts);
 if ~opt.Plot, return; end
@@ -182,7 +199,7 @@ for iz = 1:nz
         xlim([xs(1) xs(end)] + pad * dx); ylim([ys(1) ys(end)] + pad * dy);
         xlabel("x (mm)"); ylabel("y (mm)");
         v = M(isfinite(M));
-        title({[names{k} '  ->  ' names{k + 1}], ...
+        title({names{ab(k, 1)}, ['->  ' names{ab(k, 2)}], ...
             sprintf("z = %.0f mm, mean %+.1f %%", zs(iz), mean(v))}, ...
             "Interpreter", "none", "FontSize", 9);
         if k == nPair
@@ -190,7 +207,7 @@ for iz = 1:nz
         end
     end
 end
-suptitle_compat(f1, sprintf("%s: change from run k to run k+1, %% of run k", what));
+suptitle_compat(f1, sprintf("%s: change between runs, %% of the earlier run", what));
 
 % --- 2: summary per pair ---
 f2 = figure("Name", "Heat map change summary", "Color", "w", "Position", [100 100 760 420]);
@@ -202,13 +219,14 @@ xlabel("runs compared"); ylabel("change (%)");
 legend({"mean change (signed)", "mean size of change |%|", "total field over the grid"}, ...
     "Location", "best");
 grid on
-title(sprintf("%s: change from run k to run k+1", what), "Interpreter", "none");
+title(sprintf("%s: change between runs", what), "Interpreter", "none");
 
 if opt.Save
     d = fileparts(files{1});
-    print(f1, fullfile(d, 'heatmap_change.png'), '-dpng', '-r150');
-    print(f2, fullfile(d, 'heatmap_change_summary.png'), '-dpng', '-r150');
-    fprintf("Saved heatmap_change.png and heatmap_change_summary.png in %s\n", d);
+    n = char(opt.Name);
+    print(f1, fullfile(d, [n '.png']), '-dpng', '-r150');
+    print(f2, fullfile(d, [n '_summary.png']), '-dpng', '-r150');
+    fprintf("Saved %s.png and %s_summary.png in %s\n", n, n, d);
 end
 end
 
