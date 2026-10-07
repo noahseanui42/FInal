@@ -32,6 +32,7 @@ delta app before running a scan**.
 | `make_demo_scan.m` | Fake coils-on and baseline scans **with tilt columns**, for trying the plots without hardware |
 | `scan_grid.m` | Serpentine grid order used by `run_field_scan.m` and `make_demo_scan.m` |
 | `test_field_scan_tilt.py` | Checks with the simulated robot and tilting sensor (no hardware) |
+| `stationary_drift.py`, `test_stationary_drift.py` | Drift test: log the 1044 at one fixed spot for an hour or more (see below) |
 | `data/`, `figures/` | First tilt run (magnet underneath, hybrid correction), raw and tilt-corrected, with its plots |
 
 The tilt correction, tilt plots, dipole fit and `compare_tilt_runs.m` are in
@@ -233,6 +234,36 @@ readings arrive on a Python thread, so MATLAB must run Python **out of process**
 `scan_config.m`. Unlike FieldScan's `run_field_scan.m`, the field is written in
 **sensor axes** (the plots apply `R_sensor_to_robot`, so it isn't applied twice).
 `test_magnetometer.m` prints live field, pitch, roll and gyro.
+
+## Stationary drift test
+
+`stationary_drift.py` logs the 1044 at one spot with nothing moving, to see whether the
+reading drifts on its own. It follows up the ~11 mG/h drift in `data/REPEAT_TEST.md`.
+It opens **only the 1044**, never the Arduino, so it works with the servos off (support
+the arms so the probe can't move) or with the delta app holding the robot.
+
+```
+caffeinate -i python FieldTiltScan/stationary_drift.py --label drift-robot-off --magnet underneath \
+       --note "servos unpowered, probe on PLA block, room 21 C"
+python FieldTiltScan/stationary_drift.py --duration 90 --interval 10    # 90 min, a row every 10 s
+python FieldTiltScan/stationary_drift.py --duration 0                   # until Ctrl+C
+python FieldTiltScan/stationary_drift.py --simulate --duration 30       # no hardware
+```
+
+Every `--interval` s (default 10) it averages `--n-avg` readings (default 20 × 20 ms, as a
+scan point) into one row: time, field, |B|, acceleration, gyro and pitch/roll. Rows are
+written as they are taken; Ctrl+C keeps them. `--duration` is in minutes (default 60).
+`caffeinate -i` stops the Mac sleeping. At the end it prints, per axis and for |B|:
+
+- **slope**: straight-line fit, mG/h
+- **change**: mean of the last 5 min minus the first 5 min, mG
+- **scatter**: row-to-row spread about the fit, and **noise**: one row's standard error
+- **tilt change**: pitch and roll, last 5 min minus first 5 min (a tilt rotates the field)
+
+The same numbers go in the `.meta.json` under `drift`. A drift well above the noise
+(about 0.1–0.2 mG) is real. Start logging as soon as the sensor is plugged in: the
+warm-up is part of what the test measures. Write anything that changes during the run
+(people in the room, the temperature) in `--note` or alongside the file.
 
 ## Not yet checked on hardware
 
