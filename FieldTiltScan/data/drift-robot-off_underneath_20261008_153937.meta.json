@@ -1,0 +1,81 @@
+{
+  "label": "drift-robot-off",
+  "magnet": "underneath",
+  "note": "servos unpowered, arms supported, robot stationary",
+  "test": "stationary drift",
+  "started": "2026-10-08T15:39:37",
+  "csv": "drift-robot-off_underneath_20261008_153937.csv",
+  "script": "FieldTiltScan/stationary_drift.py",
+  "frame": "sensor axes, raw: B in gauss, acceleration in g, angular rate in deg/s, pitch/roll in deg",
+  "robot": "not connected by this script",
+  "settings": {
+    "algorithm": "imu",
+    "mag_serial": 0,
+    "simulate": false,
+    "duration_s": 3600.0,
+    "interval_s": 10.0,
+    "n_avg": 20,
+    "sample_dt_s": 0.02,
+    "gyro_zeroed": true
+  },
+  "sensor": {
+    "channel": "Spatial",
+    "algorithm": "none",
+    "algorithm_error": "PhidgetException 0x14 (Operation Not Supported)\nThis API call is not supported. For Class APIs this means that this API is not supported by this device. This can also mean the API is not supported on this OS, or OS configuration.",
+    "serial": 302277,
+    "name": "PhidgetSpatial Precision 3/3/3 High Resolution",
+    "data_interval_ms": 20,
+    "max_field_G": [
+      5.6,
+      5.6,
+      5.6
+    ],
+    "max_accel_g": [
+      8.0,
+      8.0,
+      8.0
+    ],
+    "max_rate_dps": [
+      2000.0,
+      2000.0,
+      2000.0
+    ]
+  },
+  "finished": "2026-10-08T16:39:40",
+  "rows": 361,
+  "aborted": false,
+  "rows_without_data": 0,
+  "sensor_reconnected_at_rows": [],
+  "drift": {
+    "duration_s": 3599.9969314939954,
+    "rows": 361,
+    "window_s": 300.0,
+    "slope_mG_per_h": {
+      "Bx": 0.0161985220623287,
+      "By": -0.10463497180733784,
+      "Bz": 1.9959435305978308,
+      "B": 1.9662588785490003
+    },
+    "change_mG": {
+      "Bx": 0.029274193548395333,
+      "By": -0.5025010752688075,
+      "Bz": 3.4727881720431064,
+      "B": 3.4803967747132347
+    },
+    "noise_mG": {
+      "Bx": 0.0,
+      "By": 0.13260204610630563,
+      "Bz": 0.35520453707391164
+    },
+    "scatter_mG": {
+      "Bx": 0.025551121105921008,
+      "By": 0.6249384347864936,
+      "Bz": 2.38714992215299,
+      "B": 2.3502676565627927
+    },
+    "tilt_from": "acceleration",
+    "pitch_change_deg": 0.005230833575816107,
+    "roll_change_deg": 0.04525008774118533
+  },
+  "spatial_timestamp_at_t0_ms": 2696.0
+}
