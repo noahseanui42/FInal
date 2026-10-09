@@ -92,3 +92,56 @@ servo 2's play.
 Reflash `delta_servo` with the new `config.h`, then repeat the full sweep
 (Up and Down) with `joint_angle_calibration_test.xlsx`. Target: every arm
 within ±0.5° of commanded and the three arms agreeing with each other.
+
+## After the 2026-09-30 refit: verification sweep and off-axis tests
+
+Flashed with the refit `config.h` (D9 1456 / 9.8315, D10 1373 / 9.7664,
+D11 1393 / 9.6658). Digital protractor on each bicep, positive = down. The
+spreadsheets were uploaded undated on 2026-10-09; cleaned copies are below.
+Expected angles are recomputed from `deltarobot.py` (SB 175 / SP 75 /
+L_UP 177 / L_LO 625, GEOM_TO_PHYS [2, 0, 1], TCP z −21).
+
+### On-axis Up pass (`verify_after_refit_up.csv`)
+
+- −720 → −590: every arm within **±0.9°** of commanded; rms D9 0.32°,
+  D10 0.52°, D11 0.25°.
+- Refit of measured = s × commanded + o (−740 lead-in excluded):
+  D9 s 0.993 / o +0.13°, D10 0.988 / −0.14°, D11 1.021 / −0.02°. All within
+  the measurement noise, so **`CAL[]` is left as is.**
+- −740 lead-in (approached downward from Home): D10 +4.5°, the same slack as
+  before. −730 (first step up after it): D11 +2.3°, still taking up backlash.
+
+### On-axis Down pass (`verify_after_refit_down.csv`)
+
+- Going down −570 → −610: D9 and D11 lag ~1.0–1.4° (read higher than
+  commanded); D10 drops ~4.4° **past** commanded (its ~5 mm of play, loaded).
+- Hysteresis (down − up at the same z, −590 to −610): D9 −1.2 to −1.4°,
+  D10 +4.2 to +4.7°, D11 −0.8 to −1.6°.
+- Moving back up to −590 brings D10 back to +0.9°. This is what the
+  firmware's upward final approach (`APPROACH_DZ_MM`) is for.
+
+### Off-axis ±50 mm (`off_axis_pm50.csv`) and ±100 mm (`off_axis_pm100.csv`)
+
+- Arm order is correct: the measured angles follow the GEOM_TO_PHYS
+  [2, 0, 1] pattern at every corner.
+- Errors grow with distance from the axis: rms 0.74° at ±50, 1.23° at ±100
+  (worst −2.6°). Every arm moves ~10–15% less than commanded away from its
+  centre angle. Through the FK that puts the effector 13–27 mm short
+  (about 20 mm typical), towards the axis, at the ±100 corners.
+- That is the load shortfall `delta_app/pose_correction.py` models. Its
+  predictions (`pose_correction_hybrid.json`) take the angle error from
+  rms 1.23° to **0.50°** at ±100 (outside its fitted x ±50 box) and from
+  0.74° to 0.58° at ±50.
+- Repeats: centre within 0.4°, the (−50, −50) / (−100, −100) corners
+  within 0.5°.
+- Original sheet fixes: corner-test points 9, 10 and the point-9 repeat had
+  no expected angles (32.81 / 25.37 / 22.53 and 25.37 / 32.81 / 22.53), so
+  their error cells, the "Mean error" and the "Max |error|" were wrong;
+  point 6 D10 error is −0.96 (not −0.06), D11 is −0.06 (not #REF!); point 8
+  D9 expected is 28.58 (not 28.52).
+
+### Next
+
+No `CAL[]` change. ~1° at one arm is ~8–10 mm sideways, so the protractor
+can't confirm position to better than a few mm: check the corners with the
+pen-and-ruler test, with pose correction on.
