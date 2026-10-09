@@ -13,6 +13,7 @@ a Helmholtz coil.
 | [`FieldPlots/`](FieldPlots) | MATLAB plots and analysis for the scans: field maps, repeatability, tilt correction, dipole fit. |
 | [`FieldScan/`](FieldScan) | Field-mapping scan: MATLAB link to the robot and the 1044, and all the scans from 2 Oct 2026. |
 | [`FieldTiltScan/`](FieldTiltScan) | FieldScan plus the probe's tilt (pitch/roll) and gyro logged at every point, and the first tilt run. |
+| [`ReportFigures/`](ReportFigures) | Report-ready figures for every test, with a note on each test in [`FIGURE_NOTES.md`](ReportFigures/FIGURE_NOTES.md). Rebuilt by `python ReportFigures/make_report_figures.py`. |
 
 ### DeltaApp and DeltaAppCalibrated
 
