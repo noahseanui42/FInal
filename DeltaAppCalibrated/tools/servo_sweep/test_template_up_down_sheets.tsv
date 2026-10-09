@@ -1,0 +1,28 @@
+Step	Phase	Pass	Probe z (mm)	Commanded (°)	Measured D9 (°)	Measured D10 (°)	Measured D11 (°)	Error D9 (°)	Error D10 (°)	Error D11 (°)	Notes
+1	A	lead-in	-740	38.86				=IF(F2="","",F2-$E2)	=IF(G2="","",G2-$E2)	=IF(H2="","",H2-$E2)	from Home; arrive at -720 moving up
+2	A	up	-720	32.11				=IF(F3="","",F3-$E3)	=IF(G3="","",G3-$E3)	=IF(H3="","",H3-$E3)	
+3	A	up	-700	25.66				=IF(F4="","",F4-$E4)	=IF(G4="","",G4-$E4)	=IF(H4="","",H4-$E4)	
+4	A	up	-680	19.39				=IF(F5="","",F5-$E5)	=IF(G5="","",G5-$E5)	=IF(H5="","",H5-$E5)	
+5	A	up	-660	13.18				=IF(F6="","",F6-$E6)	=IF(G6="","",G6-$E6)	=IF(H6="","",H6-$E6)	
+6	A	up	-640	6.93				=IF(F7="","",F7-$E7)	=IF(G7="","",G7-$E7)	=IF(H7="","",H7-$E7)	
+7	A	up	-620	0.57				=IF(F8="","",F8-$E8)	=IF(G8="","",G8-$E8)	=IF(H8="","",H8-$E8)	
+8	A	up	-600	-6.01				=IF(F9="","",F9-$E9)	=IF(G9="","",G9-$E9)	=IF(H9="","",H9-$E9)	
+9	A	up	-580	-12.93				=IF(F10="","",F10-$E10)	=IF(G10="","",G10-$E10)	=IF(H10="","",H10-$E10)	
+10	A	turnaround	-570	-16.56				=IF(F11="","",F11-$E11)	=IF(G11="","",G11-$E11)	=IF(H11="","",H11-$E11)	top of travel; next moves go down
+11	A	down	-580	-12.93				=IF(F12="","",F12-$E12)	=IF(G12="","",G12-$E12)	=IF(H12="","",H12-$E12)	
+12	A	down	-600	-6.01				=IF(F13="","",F13-$E13)	=IF(G13="","",G13-$E13)	=IF(H13="","",H13-$E13)	
+13	A	down	-620	0.57				=IF(F14="","",F14-$E14)	=IF(G14="","",G14-$E14)	=IF(H14="","",H14-$E14)	
+14	A	down	-640	6.93				=IF(F15="","",F15-$E15)	=IF(G15="","",G15-$E15)	=IF(H15="","",H15-$E15)	
+15	A	down	-660	13.18				=IF(F16="","",F16-$E16)	=IF(G16="","",G16-$E16)	=IF(H16="","",H16-$E16)	
+16	A	down	-680	19.39				=IF(F17="","",F17-$E17)	=IF(G17="","",G17-$E17)	=IF(H17="","",H17-$E17)	
+17	A	down	-700	25.66				=IF(F18="","",F18-$E18)	=IF(G18="","",G18-$E18)	=IF(H18="","",H18-$E18)	
+18	A	down	-720	32.11				=IF(F19="","",F19-$E19)	=IF(G19="","",G19-$E19)	=IF(H19="","",H19-$E19)	
+19	B	down-approach-on	-570	-16.56				=IF(F20="","",F20-$E20)	=IF(G20="","",G20-$E20)	=IF(H20="","",H20-$E20)	start: APPROACH_DZ_MM = 20 reflashed
+20	B	down-approach-on	-580	-12.93				=IF(F21="","",F21-$E21)	=IF(G21="","",G21-$E21)	=IF(H21="","",H21-$E21)	
+21	B	down-approach-on	-600	-6.01				=IF(F22="","",F22-$E22)	=IF(G22="","",G22-$E22)	=IF(H22="","",H22-$E22)	
+22	B	down-approach-on	-620	0.57				=IF(F23="","",F23-$E23)	=IF(G23="","",G23-$E23)	=IF(H23="","",H23-$E23)	
+23	B	down-approach-on	-640	6.93				=IF(F24="","",F24-$E24)	=IF(G24="","",G24-$E24)	=IF(H24="","",H24-$E24)	
+24	B	down-approach-on	-660	13.18				=IF(F25="","",F25-$E25)	=IF(G25="","",G25-$E25)	=IF(H25="","",H25-$E25)	
+25	B	down-approach-on	-680	19.39				=IF(F26="","",F26-$E26)	=IF(G26="","",G26-$E26)	=IF(H26="","",H26-$E26)	
+26	B	down-approach-on	-700	25.66				=IF(F27="","",F27-$E27)	=IF(G27="","",G27-$E27)	=IF(H27="","",H27-$E27)	
+27	B	down-approach-on	-720	32.11				=IF(F28="","",F28-$E28)	=IF(G28="","",G28-$E28)	=IF(H28="","",H28-$E28)	
