@@ -9,6 +9,7 @@ one program can hold the port).
     python field_scan.py --label baseline --note "coils off"
     python field_scan.py --label coils_on --coil-current 2.0
     python field_scan.py --simulate --label demo        # no hardware
+    python field_scan.py --no-sensor --label practice   # real robot, no sensor
     python field_scan.py --label coils_on --correction hybrid   # with position correction
 
 Per point: send a joint move, wait for the status stream's mv 1->0 (arrived),
@@ -498,6 +499,8 @@ def main(argv=None):
     ap.add_argument("--correction", choices=CORRECTIONS, default=cfg.correction,
                     help="position correction: off (default) or hybrid (pose_correction.py)")
     ap.add_argument("--simulate", action="store_true", help="fake robot and sensor, no hardware")
+    ap.add_argument("--no-sensor", action="store_true",
+                    help="real robot, fake sensor: practice run of the motion, readings are not real")
     a = ap.parse_args(argv)
 
     cfg.port, cfg.speed_v, cfg.settle_s = a.port, a.speed, a.settle
@@ -513,7 +516,7 @@ def main(argv=None):
         link, mag = FakeLink(), FakeMag()
         confirm = lambda prompt="": None
     else:
-        mag = Phidget1044(cfg.mag_serial, cfg.sample_dt_s)   # sensor first: fail before the robot moves
+        mag = FakeMag() if a.no_sensor else Phidget1044(cfg.mag_serial, cfg.sample_dt_s)   # sensor first: fail before the robot moves
         link = DeltaLink(cfg.port)
         confirm = input
     try:
