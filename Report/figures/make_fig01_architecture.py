@@ -1,6 +1,7 @@
 """Fig 1: system architecture block diagram. Writes fig01_architecture.png/.svg/.pdf
 next to this script. Values are from DeltaAppCalibrated/delta_servo/config.h
-(pins, L_UP, L_LO, SP, STREAM_MS), delta_app/robot_config.py (TCP) and FieldScan/HANDOFF.md."""
+(pins, L_UP, L_LO, SP, STREAM_MS), delta_app/robot_config.py (TCP) and FieldScan/HANDOFF.md;
+servo supply is a 5 V / 5 A bench PSU (replaced the 6 V AA pack)."""
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -73,7 +74,7 @@ for ya, yb in [(104, 98), (89, 63), (53, 47), (39, 33), (26, 20)]:
 # Electronics (right of the column, upper zone)
 ex0, ex1 = 102, 152
 box(ex0, 113, ex1, 131, "Arduino UNO R4 Minima", "IK · motion planner · protocol\n(no WiFi: no RF near probe)")
-box(ex0, 92, ex1, 104, "6 V AA pack", "4 × AA, servo supply only")
+box(ex0, 92, ex1, 104, "5 V bench PSU", "5 V / 5 A, servo supply only")
 
 # Host PC (outside both zones)
 px0, px1 = 186, 222
@@ -87,7 +88,7 @@ label((px0 + ex1) / 2, 116, "status JSON\nevery 20 ms\n{deg, mv, run,\nen, e}", 
 arrow([(ex0, 121), (cx1, 121)], sig)                          # PWM
 label((ex0 + cx1) / 2, 122, "PWM\nD9–D11", sig)
 arrow([(ex0, 98), (95, 98), (95, 109), (cx1, 109)], pwr)     # servo power
-label(93.5, 101, "6 V", pwr, ha="right")
+label(93.5, 101, "5 V", pwr, ha="right")
 arrow([((px0 + px1) / 2, 98), ((px0 + px1) / 2, 14), (cx1, 14)], sig)   # Phidget22 USB
 label(128, 15, "Phidget22 over USB\nB, accel, gyro, pitch/roll", sig)
 
