@@ -1,6 +1,8 @@
 function plot_field_map(dataFile, baselineFile, varargin)
 % plot_field_map — plot a scan CSV from run_field_scan.
 %
+%   plot_field_map                       % pick the scan (and an optional coils-off
+%                                        % baseline) in file dialogs
 %   plot_field_map(file)                 % raw field (includes Earth's field)
 %   plot_field_map(file, baselineFile)   % coil field only: file minus a coils-off
 %                                        % scan, matched point by point on position
@@ -21,7 +23,20 @@ p = inputParser;
 p.addParameter("TiltCorrect", false);   % true: remove the probe's tilt first (apply_tilt)
 p.parse(varargin{:});
 opt = p.Results;
-if nargin < 2 || strlength(string(baselineFile)) == 0, baselineFile = ''; end
+if nargin < 1
+    [f, d] = uigetfile({'*.csv', 'Scan CSVs (*.csv)'}, 'Pick the scan to plot');
+    if isequal(f, 0), error("No scan picked."); end
+    dataFile = fullfile(d, f);
+    [f, d] = uigetfile({'*.csv', 'Scan CSVs (*.csv)'}, ...
+        'Pick the coils-off baseline scan (Cancel = no baseline)', d);
+    if isequal(f, 0)
+        baselineFile = '';
+        fprintf('No baseline picked: plotting the raw field (includes Earth''s field).\n');
+    else
+        baselineFile = fullfile(d, f);
+    end
+end
+if ~exist('baselineFile', 'var') || strlength(string(baselineFile)) == 0, baselineFile = ''; end
 
 T = readtable(dataFile);
 P = [T.x_mm T.y_mm T.z_mm];
