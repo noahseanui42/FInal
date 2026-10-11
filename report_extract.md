@@ -57,7 +57,7 @@ Also tracked: `ENGR489 Literature Notes.pdf` (added in commit 8dbb1ff, message "
 968b204, 8e282af, c6d0af3, 6a9e996).
 
 **Active range per documents (not git).** Work is dated back to **2026-09-26** (single-arm limits pass,
-DeltaApp/README.md:75; also 85-86 "confirmed same day") and **2026-09-29/30** (CALIBRATION_LOG.md:3,21,63), with the
+DeltaApp/README.md:75; also 81 "confirmed same day") and **2026-09-29/30** (CALIBRATION_LOG.md:3,21,63), with the
 correction refit dated **2026-10-01** (pose_correction_hybrid.json:27). So: **repo work ≈ 26 Sep – 9 Oct 2026**, git
 history only 2–9 Oct.
 
