@@ -122,3 +122,9 @@ Do this the day before, so you can show the images if MATLAB is slow on the day.
 | What's the drift? | About 11 mG over the hour, uniform over the grid. ~17 % from the probe tilting as it warms, the rest most likely thermal (sensor offset, servo magnets). Take the background close in time, or fit a per-run offset. |
 | Where's the Helmholtz field? | All scans so far are coils off; the magnet stands in for a known field source. |
 | Is the noise from the sensor? | No: one point's sensor noise is about 0.2 mG, the run-to-run spread is about 2 mG, so the spread comes from positioning and settling. |
+
+## Running it from one file
+
+`demo_plots.m` (this folder) has every command above as a section. Open it, `cd`
+into `FieldTiltScan`, click in a section and press Ctrl+Enter (Cmd+Enter on a Mac)
+to run just that one. Run section 0 first.
