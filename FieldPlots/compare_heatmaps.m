@@ -55,13 +55,12 @@ optNames = {'Save', 'Labels', 'Plot', 'Floor', 'CLim', 'R', 'TiltCorrect', 'Pair
     'Name', 'Units'};
 if nargin < 1, files = []; end
 haveBase = nargin >= 2 && ~(isnumeric(baselineFile) && isempty(baselineFile));
-if (ischar(files) || isstring(files)) && any(strcmpi(char(files), optNames))
+if is_option(files, optNames)
     % compare_heatmaps("Save", true, ...): options only, so pick the files
     if nargin >= 2, varargin = [{files, baselineFile}, varargin]; else, varargin = {files}; end
     files = [];
     haveBase = false;
-elseif haveBase && (ischar(baselineFile) || isstring(baselineFile)) && ...
-        any(strcmpi(char(baselineFile), optNames))
+elseif haveBase && is_option(baselineFile, optNames)
     % compare_heatmaps(files, "Save", true): no background, options start here
     varargin = [{baselineFile}, varargin];
     haveBase = false;
@@ -314,6 +313,14 @@ else
     [~, order] = sort(files);
 end
 files = files(order);
+end
+
+
+function tf = is_option(v, optNames)
+% true if v is one piece of text naming an option (a string array or cell of file
+% names never is)
+tf = ((ischar(v) && isrow(v)) || (isstring(v) && isscalar(v))) && ...
+    any(strcmpi(char(v), optNames));
 end
 
 
