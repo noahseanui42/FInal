@@ -156,7 +156,25 @@ cd /Users/rochelle/FInal
 python FieldTiltScan/field_scan_tilt.py --label demo_rep1 --correction hybrid --x -50 50 3 --y -50 50 3 --z -650 -650 1 && python FieldTiltScan/field_scan_tilt.py --label demo_rep2 --correction hybrid --x -50 50 3 --y -50 50 3 --z -650 -650 1
 ```
 
+Or the two runs one at a time (e.g. to talk between them; still don't touch the magnet):
+
+```
+python FieldTiltScan/field_scan_tilt.py --label demo_rep1 --correction hybrid --x -50 50 3 --y -50 50 3 --z -650 -650 1
+python FieldTiltScan/field_scan_tilt.py --label demo_rep2 --correction hybrid --x -50 50 3 --y -50 50 3 --z -650 -650 1
+```
+
+**Names must be exactly `demo_rep1` and `demo_rep2`.** The scans are saved as
+`FieldTiltScan/data/demo_rep1_<date>_<time>.csv` and `demo_rep2_<date>_<time>.csv`,
+and section 5b looks for those names (the newest of each, so older test runs don't
+matter). Adding `--magnet under` is fine (`demo_rep1_under_<time>.csv` still matches).
 Both runs must use the same grid (same `--x --y --z`), or the points won't match.
+
+Check both files are there before plotting:
+
+```
+ls /Users/rochelle/FInal/FieldTiltScan/data/demo_rep*
+```
+
 Then run section 5b of `demo_plots.m`. It takes the newest `demo_rep1` and `demo_rep2`
 scans and draws:
 
