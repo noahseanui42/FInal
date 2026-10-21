@@ -145,6 +145,35 @@ plot_tilt(f)
 No background is subtracted here, so |B| is the raw field: Earth's field plus the
 robot's own (about 0.7 G with no magnet).
 
+## 6. Optional: live repeatability (two runs back to back, magnet fixed)
+
+Put the magnet under the grid (on its stand, as in the 6 Oct test) and don't touch it,
+the robot or the table between the runs. From the repo root, both runs in one line
+(the second starts only if the first finished), about 4 min for 9 + 9 points:
+
+```
+cd /Users/rochelle/FInal
+python FieldTiltScan/field_scan_tilt.py --label demo_rep1 --correction hybrid --x -50 50 3 --y -50 50 3 --z -650 -650 1 && python FieldTiltScan/field_scan_tilt.py --label demo_rep2 --correction hybrid --x -50 50 3 --y -50 50 3 --z -650 -650 1
+```
+
+Both runs must use the same grid (same `--x --y --z`), or the points won't match.
+Then run section 6 of `demo_plots.m`. It takes the newest `demo_rep1` and `demo_rep2`
+scans and draws:
+
+- the heat map of run 1 (raw |B|: Earth + robot + magnet),
+- the change in |B| at every point from run 1 to run 2, in mG (red = stronger in
+  run 2, blue = weaker, white = no change), and a summary, with the numbers in the
+  command window.
+
+What to expect and say: the maps should be nearly white. The 6 Oct five-run test
+changed by 1.4–1.9 mG median per point between runs, about 10 × the 0.2 mG sensor
+noise, so what's left is the robot's positioning and settling (about 2 mm). With
+the magnet closer than in that test the gradient is steeper, so the same position
+error gives a bigger change in mG.
+
+Without the magnet the field barely changes across the grid, so the test can't see
+position errors: keep the magnet in for both runs.
+
 ## Saving PNG backups beforehand
 
 Add `"Save", true` to any command above (plots 1–3) to write PNGs next to the CSV.

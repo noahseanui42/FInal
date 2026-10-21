@@ -55,3 +55,14 @@ assert(~isempty(d), "No demo_live scan in data/ yet");
 live = fullfile(d(i).folder, d(i).name);
 plot_field_layers(live, "", "Figures", "heat")
 plot_tilt(live);
+
+%% 6. Live repeatability: two scans back to back, magnet fixed
+% First, in a terminal from the repo root, magnet in place and not touched between runs:
+%   python FieldTiltScan/field_scan_tilt.py --label demo_rep1 --correction hybrid --x -50 50 3 --y -50 50 3 --z -650 -650 1 && python FieldTiltScan/field_scan_tilt.py --label demo_rep2 --correction hybrid --x -50 50 3 --y -50 50 3 --z -650 -650 1
+close all
+d1 = dir("data/demo_rep1_*.csv"); d2 = dir("data/demo_rep2_*.csv");
+assert(~isempty(d1) && ~isempty(d2), "Need a demo_rep1 and a demo_rep2 scan in data/");
+[~, i] = max([d1.datenum]); [~, j] = max([d2.datenum]);
+runs = {fullfile(d1(i).folder, d1(i).name), fullfile(d2(j).folder, d2(j).name)}
+plot_field_layers(runs{1}, "", "Figures", "heat")
+compare_heatmaps(runs, "", "Units", "mG", "Title", "Live repeatability");
