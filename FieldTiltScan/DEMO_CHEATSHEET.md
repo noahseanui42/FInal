@@ -92,11 +92,46 @@ python ../FieldPlots/fit_dipole_joint.py --plot data/full25-4z_corr-hybrid_none_
 ## 5. Optional: live scan (only after 1–4 have gone well)
 
 Close the delta app first (only one program can use the serial port). From the repo
-root in a terminal, 9 points at z −650, about 1–2 min:
+root in a terminal, 9 points at z −650, about 2 min:
 
 ```
+cd /Users/rochelle/FInal
 python FieldTiltScan/field_scan_tilt.py --label demo_live --correction hybrid --x -50 50 3 --y -50 50 3 --z -650 -650 1
 ```
+
+It parks at (0, 0, −650) and zeroes the gyro (keep the table still), then prints a
+line per point. Ctrl+C stops it and keeps the points so far. At the end the robot
+stays enabled (disabling drops the arms).
+
+### Choosing the size
+
+```
+python FieldTiltScan/field_scan_tilt.py --label demo_live --correction hybrid --x XMIN XMAX NX --y YMIN YMAX NY --z ZMIN ZMAX NZ
+```
+
+Each axis is min, max, number of points (evenly spaced, mm, probe tip, robot frame).
+One value on an axis: min = max and 1 point. Keep inside x ±50, y ±150, z −700 to
+−600 (where the hybrid correction was validated; outside it the script warns).
+Past scans took about 12–14 s per point, so time ≈ points × 13 s.
+
+| Size | Grid options | Points | Time |
+|---|---|---|---|
+| Quickest | `--x -50 50 2 --y -50 50 2 --z -650 -650 1` | 4 | ~1 min |
+| Small (demo) | `--x -50 50 3 --y -50 50 3 --z -650 -650 1` | 9 | ~2 min |
+| Medium | `--x -50 50 3 --y -100 100 5 --z -650 -650 1` | 15 | ~3–4 min |
+| Two layers | `--x -50 50 3 --y -50 50 3 --z -700 -600 2` | 18 | ~4 min |
+| Large | `--x -50 50 5 --y -100 100 5 --z -700 -600 2` | 50 | ~11 min |
+
+- At least 2 points in x and y, or the heat map has nothing to fill in.
+- Keep `--label demo_live` so section 5 of `demo_plots.m` finds it.
+- `--correction hybrid` is a real setting (not part of the name): it adjusts each
+  move to cancel the robot's known positioning errors, as in all the saved results.
+  Needs numpy; leave it out only if numpy is missing (the scan then runs uncorrected).
+- `--settle 2` saves about 3 s per point, but the probe may still be swaying.
+- Port: the script uses `/dev/cu.usbmodem14101`. Check with `ls /dev/cu.usbmodem*`
+  and add `--port /dev/cu.usbmodemXXXX` if it differs.
+- Dry run without hardware: `python FieldTiltScan/field_scan_tilt.py --simulate --label demo_test`
+  (then delete the `demo_test` files from `data/`).
 
 Then in MATLAB (from `FieldTiltScan`), plot the newest `demo_live` scan:
 
@@ -107,7 +142,8 @@ plot_field_layers(f, "", "Figures", "heat")
 plot_tilt(f)
 ```
 
-No background is subtracted here, so |B| includes Earth's field (about 0.5 G).
+No background is subtracted here, so |B| is the raw field: Earth's field plus the
+robot's own (about 0.7 G with no magnet).
 
 ## Saving PNG backups beforehand
 
