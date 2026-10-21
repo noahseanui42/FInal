@@ -145,7 +145,7 @@ plot_tilt(f)
 No background is subtracted here, so |B| is the raw field: Earth's field plus the
 robot's own (about 0.7 G with no magnet).
 
-## 6. Optional: live repeatability (two runs back to back, magnet fixed)
+## 5b. Optional: live repeatability (two runs back to back, magnet fixed)
 
 Put the magnet under the grid (on its stand, as in the 6 Oct test) and don't touch it,
 the robot or the table between the runs. From the repo root, both runs in one line
@@ -157,10 +157,11 @@ python FieldTiltScan/field_scan_tilt.py --label demo_rep1 --correction hybrid --
 ```
 
 Both runs must use the same grid (same `--x --y --z`), or the points won't match.
-Then run section 6 of `demo_plots.m`. It takes the newest `demo_rep1` and `demo_rep2`
+Then run section 5b of `demo_plots.m`. It takes the newest `demo_rep1` and `demo_rep2`
 scans and draws:
 
-- the heat map of run 1 (raw |B|: Earth + robot + magnet),
+- the heat maps of run 1 and run 2 (raw |B|: Earth + robot + magnet; each has its
+  own colour scale, so compare them by eye, then use the change map for numbers),
 - the change in |B| at every point from run 1 to run 2, in mG (red = stronger in
   run 2, blue = weaker, white = no change), and a summary, with the numbers in the
   command window.
