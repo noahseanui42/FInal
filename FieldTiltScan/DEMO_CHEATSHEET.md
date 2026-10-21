@@ -1,41 +1,5 @@
 # Demo cheat sheet
 
-Terminal commands for the live robot demo. Run them from the repo folder; close the
-delta app before any scan (only one program can use the Arduino's port).
-
-## Get the latest files
-
-```
-cd /Users/rochelle/FInal
-git fetch origin claude/upbeat-planck-83lcp0
-git checkout origin/claude/upbeat-planck-83lcp0 -- FieldTiltScan/demo_plots.m FieldPlots/compare_heatmaps.m
-```
-
-## Before the examiner arrives
-
-Check the Arduino's port (the scan expects `/dev/cu.usbmodem14101`; if yours differs,
-add `--port /dev/cu.usbmodemXXXX` to the scan commands):
-
-```
-ls /dev/cu.usbmodem*
-```
-
-Clear out old test scans so the demo plots the right ones:
-
-```
-rm /Users/rochelle/FInal/FieldTiltScan/data/demo_live_* /Users/rochelle/FInal/FieldTiltScan/data/demo_rep*
-```
-
-## Move the robot by hand (delta app)
-
-```
-cd /Users/rochelle/FInal
-python DeltaAppCalibrated/delta_app/main.py
-```
-
-Connect → Online → support the arms, servo power on → Enable → speed 10 % → Home → jog.
-Close it before scanning.
-
 ## Live scan (section 5)
 
 About 2 min, 9 points:
